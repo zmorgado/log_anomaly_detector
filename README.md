@@ -1,6 +1,6 @@
 # Log Anomaly Detector
 
-A hybrid two-stage system for detecting and classifying network security threats, built as the final project of the *Máster en Inteligencia Artificial* (CEI Sevilla).
+A hybrid two-stage system for detecting and classifying network security threats, built as the final project of the *Curso Intensivo en Inteligencia Artificial* (CEI Sevilla).
 
 It combines an **unsupervised LSTM Autoencoder** that flags anomalous network flows with no prior knowledge of the attack, and a **supervised multiclass XGBoost** classifier that identifies the specific threat type for the flows marked as anomalous.
 
@@ -101,7 +101,3 @@ Google Colab (GPU T4), Python 3.11. Main libraries: TensorFlow/Keras 2.15, XGBoo
 - Malhotra, P. et al. (2016). *LSTM-based encoder-decoder for multi-sensor anomaly detection.* arXiv:1607.00148.
 - Chen, T., & Guestrin, C. (2016). *XGBoost: A scalable tree boosting system.* ACM SIGKDD.
 - Olah, C. (2015). *Understanding LSTM Networks.* https://colah.github.io/posts/2015-08-Understanding-LSTMs/
-
-## Author
-
-Santiago Morgado Blanar — Máster en Inteligencia Artificial, CEI Sevilla.
