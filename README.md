@@ -1,6 +1,6 @@
 # Log Anomaly Detector
 
-A hybrid two-stage system for detecting and classifying network security threats, built as the final project of the *Curso Intensivo en Inteligencia Artificial* (CEI Sevilla).
+A hybrid two-stage system for detecting and classifying network security threats, built as the final project of the *Curso Intensivo en Inteligencia Artificial* (CEI Seville).
 
 It combines an **unsupervised LSTM Autoencoder** that flags anomalous network flows with no prior knowledge of the attack, and a **supervised multiclass XGBoost** classifier that identifies the specific threat type for the flows marked as anomalous.
 
