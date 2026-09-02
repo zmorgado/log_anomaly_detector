@@ -85,15 +85,30 @@ Network flow (36 features)
 ```
 ├── dataset/                          # CIC-IDS2017 CSV files (Git LFS)
 ├── notebook.ipynb                    # full pipeline: preprocessing, training, evaluation
+├── requirements.txt                  # pinned dependencies (Python 3.12)
 ├── scripts/
 │   ├── deep_learning_summary.ipynb   # LSTM Autoencoder summary
 │   └── machine_learning_summary.ipynb# XGBoost summary
 └── memoria.pdf                       # full project report (Spanish)
 ```
 
+## Local setup
+
+Requires Python 3.12 — TensorFlow does not support Python 3.13+.
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate    # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+The CSV files are stored with Git LFS; run `git lfs pull` after cloning to fetch them.
+
 ## Environment
 
-Google Colab (GPU T4), Python 3.11. Main libraries: TensorFlow/Keras 2.15, XGBoost 2.0, scikit-learn 1.3, pandas 2.1, numpy 1.26, matplotlib 3.8, seaborn 0.13.
+Local development uses Python 3.12 (TensorFlow does not support 3.13+). Main libraries: TensorFlow 2.16.1 (Keras 3.15.1), XGBoost 2.0.3, scikit-learn 1.3.2, pandas 2.1.4, numpy 1.26.4, matplotlib 3.8.4, seaborn 0.13.2. Exact pins are in `requirements.txt`.
+
+The original models were trained on Google Colab (GPU T4); the pinned local environment reproduces them (anomaly threshold 0.4444 vs 0.4426 on Colab).
 
 ## References
 
