@@ -87,6 +87,7 @@ Network flow (36 features)
 ├── notebook.ipynb                    # full pipeline: preprocessing, training, evaluation
 ├── requirements.txt                  # pinned dependencies (Python 3.12)
 ├── scripts/
+│   ├── train.py                      # reproducible training pipeline
 │   ├── deep_learning_summary.ipynb   # LSTM Autoencoder summary
 │   └── machine_learning_summary.ipynb# XGBoost summary
 └── memoria.pdf                       # full project report (Spanish)
@@ -109,6 +110,19 @@ The CSV files are stored with Git LFS; run `git lfs pull` after cloning to fetch
 Local development uses Python 3.12 (TensorFlow does not support 3.13+). Main libraries: TensorFlow 2.16.1 (Keras 3.15.1), XGBoost 2.0.3, scikit-learn 1.3.2, pandas 2.1.4, numpy 1.26.4, matplotlib 3.8.4, seaborn 0.13.2. Exact pins are in `requirements.txt`.
 
 The original models were trained on Google Colab (GPU T4); the pinned local environment reproduces them (anomaly threshold 0.4444 vs 0.4426 on Colab).
+
+## Reproducible training
+
+After completing the local setup above, run the full pipeline from the repository root:
+
+```bash
+python scripts/train.py
+```
+
+The script reads the two CSVs from `dataset/` and writes the fitted scaler,
+label encoder, XGBoost model, LSTM autoencoder, calibrated threshold, training
+history, and evaluation metrics to `artifacts/`. Use `--data-dir` or
+`--artifacts-dir` to select different input/output locations.
 
 ## References
 
