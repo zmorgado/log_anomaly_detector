@@ -493,15 +493,21 @@
     el.verdictSub.innerHTML =
       'error <b>' + fmt(cur.err) + '</b> · threshold <b>' + fmt(threshold) +
       '</b> · Δ <b>' + (delta >= 0 ? '+' : '') + fmt(delta) + '</b>' +
-      (anom ? ' · sent to XGBoost → <b>' + classOf(cur) + '</b>'
+      (anom ? ' · sent to XGBoost → <b>' + classOf(cur) + '</b>' +
+              (classOf(cur) === 'BENIGN' ? ' <span style="opacity:.75">(stages disagree)</span>' : '')
             : ' · not classified');
   }
 
   // ------------------------------------------------------------------- queue
 
+  /* What kind of alert is this?
+     'disagree' is its own case and a common one: the autoencoder flags the
+     window, XGBoost looks at it and answers BENIGN. The pipeline has no
+     arbiter for that, so the alert reaches the analyst with no attack name.
+     Reporting it as a plain false positive would hide the disagreement. */
   function cardKind(w) {
-    // What kind of alert is this, given ground truth?
     if (w.unknown) return 'unknown';
+    if (w.xgb === 'BENIGN') return 'disagree';
     if (w.truth === 'BENIGN') return 'fp';
     if (w.xgb !== w.truth) return 'misclass';
     return 'ok';
@@ -514,16 +520,22 @@
     li.className = 'incident-card' +
       (kind === 'unknown' ? ' incident-card--unknown' :
        kind === 'misclass' ? ' incident-card--misclass' :
-       kind === 'fp' ? ' incident-card--fp' : '') +
+       (kind === 'fp' || kind === 'disagree') ? ' incident-card--fp' : '') +
       (!reduceMotion && item.fresh ? ' incident-card--drop' : '');
 
-    var glyph = kind === 'unknown' ? '?' : kind === 'misclass' ? '≠' : kind === 'fp' ? '✕' : '▲';
+    var glyph = kind === 'unknown' ? '?' :
+                kind === 'misclass' ? '≠' :
+                kind === 'disagree' ? '⁄' :
+                kind === 'fp' ? '✕' : '▲';
 
     var cls;
     if (kind === 'unknown') {
       cls = '<s>' + w.xgb + '</s> → UNKNOWN (ground truth: ' + w.truth + ')';
     } else if (kind === 'misclass') {
       cls = w.xgb + ' <span style="opacity:.7">≠ ' + w.truth + '</span>';
+    } else if (kind === 'disagree') {
+      cls = 'NO CLASS <span style="opacity:.7">— XGBoost says BENIGN' +
+            (w.truth === 'BENIGN' ? '' : ', truth ' + w.truth) + '</span>';
     } else if (kind === 'fp') {
       cls = w.xgb + ' <span style="opacity:.7">— actually BENIGN</span>';
     } else {
@@ -537,6 +549,12 @@
     } else if (kind === 'misclass') {
       note = '<p class="card-note">Detected, but named wrong. The analyst still gets a real ' +
              'incident, with a misleading title.</p>';
+    } else if (kind === 'disagree') {
+      note = '<p class="card-note">The detector flagged this window; the classifier answered ' +
+             'BENIGN. The two stages disagree and the pipeline has no tie-breaker, so the ' +
+             'analyst gets an alert with no attack name' +
+             (w.truth === 'BENIGN' ? ' — here the classifier was right.'
+                                   : ' — and here the classifier was wrong.') + '</p>';
     } else if (kind === 'fp') {
       note = '<p class="card-note">False positive — benign traffic above your threshold. ' +
              'This is the cost of lowering the line.</p>';
@@ -624,6 +642,26 @@
       ' and are never classified. Recall ' + fmt(m.recall, 3) + '. ' +
       'They appear on the chart as hollow dashed circles — visible precisely because ' +
       'they never reach the queue.';
+    // Alerts the classifier refuses to name — the two stages disagreeing.
+    var disagree = 0, disagreeWrong = 0;
+    for (var i = 0; i < windows.length; i++) {
+      var w = windows[i];
+      if (w.err > threshold && w.xgb === 'BENIGN') {
+        disagree++;
+        if (w.truth !== 'BENIGN') disagreeWrong++;
+      }
+    }
+    el.disagreeNote.innerHTML =
+      '<b>The two stages disagree more often than either is wrong.</b> At your current ' +
+      'threshold, <b>' + comma(disagree) + '</b> of ' + comma(m.alerts) + ' alerts are windows ' +
+      'the autoencoder flagged and XGBoost then labelled BENIGN. The pipeline has no arbiter ' +
+      'for that: the alert still reaches the analyst, just without an attack name. ' +
+      (disagreeWrong
+        ? 'In ' + comma(disagreeWrong) + ' of them the classifier was the one that was wrong — ' +
+          'a real attack the detector caught and the classifier waved through.'
+        : 'On this slice the classifier is right every time it disagrees, which is the ' +
+          'benign case working as intended.');
+
     el.failFp.textContent = comma(m.fp) + ' / ' + comma(m.alerts);
     el.failFpBody.innerHTML =
       'alerts are benign traffic. Precision ' + fmt(m.precision, 3) +
@@ -739,8 +777,13 @@
     if (now - lastAnnounce < ANNOUNCE_MS) return;
     lastAnnounce = now;
     var anom = w.err > threshold;
+    var verdictSpeech;
+    if (!anom) verdictSpeech = 'Benign.';
+    else if (w.xgb === 'BENIGN') verdictSpeech = 'Flagged anomalous, but the classifier ' +
+      'answered benign. The two stages disagree.';
+    else verdictSpeech = 'Anomalous. Classified ' + w.xgb + '.';
     el.live.textContent = 'Window ' + w.w + ' analyzed. Reconstruction error ' +
-      fmt(w.err, 2) + '. ' + (anom ? 'Anomalous. Classified ' + w.xgb + '.' : 'Benign.');
+      fmt(w.err, 2) + '. ' + verdictSpeech;
   }
 
   function setPlaying(on) {
@@ -853,6 +896,7 @@
     el.failMissed = $('fail-missed'); el.failMissedBody = $('fail-missed-body');
     el.failFp = $('fail-fp'); el.failFpBody = $('fail-fp-body');
     el.tradeoff = $('tradeoff-note');
+    el.disagreeNote = $('disagree-note');
     el.live = $('live-status');
     el.btnPlay = $('btn-play');
     el.btnPlayLabel = $('btn-play-label');
