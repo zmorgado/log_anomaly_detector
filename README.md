@@ -76,7 +76,9 @@ Network flow (36 features)
 
 ## Limitations & future work
 
-- Attacks that do not noticeably perturb flow features (DoS Hulk) escape the unsupervised detector. Possible improvements: additional features that better characterize these flows, larger sliding windows (20 → 100), or combining the LSTM with another unsupervised detector such as Isolation Forest.
+- Attacks that do not noticeably perturb flow features escape the unsupervised detector. This was measured directly: on unseen traffic, **DoS GoldenEye is detected in 11.2% of windows — statistically indistinguishable from the 11.1% false-positive rate on benign traffic in the same region** (median reconstruction error 0.2785 vs 0.2682 for benign). Like DoS Hulk, GoldenEye issues syntactically valid HTTP requests, so the flows it produces sit inside the distribution the autoencoder learned as normal. The detector is not partially seeing these attacks; it is not seeing them at all.
+- Not every unknown attack is invisible, though. Heartbleed — an attack class entirely absent from training — is detected in 62.5% of its windows (median error 0.4582, above the 0.4444 threshold), and XGBoost then labels it `BENIGN` because it has no class for it. Detection and classification fail independently, which is the argument for keeping the two stages separate.
+- Mitigations worth testing for the flow-feature blind spot (DoS Hulk). Possible improvements: additional features that better characterize these flows, larger sliding windows (20 → 100), or combining the LSTM with another unsupervised detector such as Isolation Forest.
 - The dataset was reduced for runtime; scaling to the remaining CIC-IDS2017 attack classes (PortScan, Brute Force, Web Attacks, Infiltration, Botnet) would test how the architecture generalizes.
 - Adding an LLM-generated explanation step that takes the highest-error features, the predicted class and flow context to produce a human-readable report for analysts.
 
@@ -86,10 +88,17 @@ Network flow (36 features)
 ├── dataset/                          # CIC-IDS2017 CSV files (Git LFS)
 ├── notebook.ipynb                    # full pipeline: preprocessing, training, evaluation
 ├── requirements.txt                  # pinned dependencies (Python 3.12)
+├── design.md                         # visual specification for the demo page
 ├── scripts/
 │   ├── train.py                      # reproducible training pipeline
+│   ├── export_demo.py                # precomputes the demo feed
 │   ├── deep_learning_summary.ipynb   # LSTM Autoencoder summary
 │   └── machine_learning_summary.ipynb# XGBoost summary
+├── web/                              # static browser demo (no backend)
+│   ├── index.html
+│   ├── demo.css
+│   ├── demo.js
+│   └── demo_feed.json                # precomputed inference output
 └── memoria.pdf                       # full project report (Spanish)
 ```
 
@@ -123,6 +132,46 @@ The script reads the two CSVs from `dataset/` and writes the fitted scaler,
 label encoder, XGBoost model, LSTM autoencoder, calibrated threshold, training
 history, and evaluation metrics to `artifacts/`. Use `--data-dir` or
 `--artifacts-dir` to select different input/output locations.
+
+## Interactive demo
+
+A static page in `web/` replays the trained pipeline over an **unseen slice** of Wednesday
+traffic (absolute rows 67,250–69,269 — outside the 40k–90k range used to fit XGBoost, and
+the scaler was fitted on Monday benign traffic only). Open it directly:
+
+```bash
+open web/index.html          # macOS; or just open the file in a browser
+```
+
+No backend and no build step. All inference is precomputed by `scripts/export_demo.py`
+into `web/demo_feed.json` (345 KB), so the page only replays results:
+
+```bash
+python scripts/export_demo.py
+```
+
+The feed stores the **raw reconstruction error per window**, never a benign/anomalous
+verdict. The page recomputes `error > threshold` in the browser, which is what makes the
+threshold draggable: moving it re-derives every verdict, the incident queue, and the live
+precision/recall figures. XGBoost predictions are exported for every window, so lowering
+the threshold immediately classifies windows the calibrated run never flagged.
+
+Dragging the threshold traces the precision/recall tradeoff on this slice:
+
+| Threshold | Precision | Recall | Alerts |
+|-----------|-----------|--------|--------|
+| 0.15      | 0.44      | 0.99   | 1,985  |
+| 0.35      | 0.68      | 0.88   | 1,143  |
+| **0.4444** (calibrated) | **0.83** | **0.86** | **907** |
+| 0.60      | 0.98      | 0.74   | 663    |
+| 1.00      | 0.99      | 0.19   | 167    |
+
+F1 peaks slightly *above* the shipped threshold on this slice, so the 95th-percentile
+calibration is defensible rather than optimal — the demo lets you find that yourself.
+
+Note that this slice contains no DoS Hulk, so the pipeline's main weakness (0.424 recall)
+is reported in the demo's metrics panel rather than visible in the stream. `design.md`
+documents the visual specification the page implements.
 
 ## References
 

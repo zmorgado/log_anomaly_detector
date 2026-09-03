@@ -2,6 +2,17 @@
 
 from __future__ import annotations
 
+# TensorFlow 2.16.1 imports the stdlib `distutils`, removed in Python 3.12
+# (PEP 632). setuptools ships a shim, but it is installed by a .pth file that
+# is not executed in every environment (e.g. sandboxed runners). Installing it
+# explicitly makes the import work regardless of how the interpreter started.
+try:
+    import _distutils_hack
+
+    _distutils_hack.add_shim()
+except Exception:  # pragma: no cover - shim already active or not needed
+    pass
+
 import argparse
 import json
 import random
