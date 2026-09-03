@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log Anomaly Detector — interactive demo</title>
+<meta name="description" content="Interactive replay of a two-stage LSTM autoencoder + XGBoost network intrusion detector on CIC-IDS2017. Drag the anomaly threshold and watch precision, recall and the alert queue recompute.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=&apos;http://www.w3.org/2000/svg&apos; viewBox=&apos;0 0 16 16&apos;%3E%3Crect width=&apos;16&apos; height=&apos;16&apos; rx=&apos;3&apos; fill=&apos;%230d0f15&apos;/%3E%3Cpath d=&apos;M2 11 L6 11 L8 5 L10 9 L14 9&apos; stroke=&apos;%23fcbb00&apos; stroke-width=&apos;1.6&apos; fill=&apos;none&apos;/%3E%3C/svg%3E">
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="page-header">
+    <div class="prose">
+      <p class="eyebrow">LSTM Autoencoder → XGBoost · CIC-IDS2017</p>
+      <h1 class="page-title">The threshold is the whole system.</h1>
+      <p class="page-lede">
+        An unsupervised LSTM autoencoder scores every 20-flow window by how badly it
+        reconstructs it. Anything above the threshold is flagged and handed to a supervised
+        XGBoost classifier for naming. <strong>Everything you see below is recomputed in your
+        browser from one number</strong> — drag it and watch the verdicts, the alert queue and
+        the precision/recall tradeoff move with it.
+      </p>
+      <p class="provenance" id="provenance">
+        <b>Source</b> <span id="prov-source">—</span><br>
+        <b>Rows</b> <span id="prov-rows">—</span> · <b>windows</b> <span id="prov-windows">—</span>
+        · <b>tensor</b> <span id="prov-shape">—</span><br>
+        <span id="prov-note">—</span>
+      </p>
+    </div>
+  </header>
+
+  <noscript>
+    <div class="prose noscript-note">
+      <strong>JavaScript is disabled.</strong> The interactive replay needs it. The measured
+      results are unchanged and are stated in full below: the full pipeline scores
+      <b>0.805 accuracy</b>, with DoS Hulk recall at <b>0.424</b> — the detector, not the
+      classifier, is the bottleneck. XGBoost alone reaches 0.996 accuracy when labels are
+      available; the LSTM detector alone reaches 0.696.
+    </div>
+  </noscript>
+
+  <main class="demo stack" id="demo">
+
+    <!-- ============ Playback controls: FIRST focusable element (WCAG 2.2.2) ============ -->
+    <section aria-labelledby="controls-h">
+      <div class="header-bar">
+        <div>
+          <p class="eyebrow" id="controls-h">Playback</p>
+          <p class="section-note" id="controls-note" style="margin-top:4px">
+            The stream auto-advances one flow every 420&nbsp;ms. Pause it at any time.
+          </p>
+        </div>
+        <div class="controls">
+          <button type="button" class="btn btn--primary" id="btn-play"
+                  aria-pressed="false">
+            <span class="btn__glyph" id="btn-play-glyph" aria-hidden="true">▮▮</span>
+            <span id="btn-play-label">Pause</span>
+          </button>
+          <button type="button" class="btn" id="btn-step">
+            <span class="btn__glyph" aria-hidden="true">▸</span> Step one window
+          </button>
+          <button type="button" class="btn" id="btn-theme" aria-pressed="false">
+            <span class="btn__glyph" aria-hidden="true">◐</span>
+            <span id="btn-theme-label">Dark</span>
+          </button>
+        </div>
+      </div>
+      <!-- Throttled: at most one announcement per 5s (§7.4) -->
+      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" id="live-status"></p>
+    </section>
+
+    <!-- ============ 1 + 2. Log stream with sliding-window bracket (one panel) ============ -->
+    <section aria-labelledby="stream-h">
+      <div class="section-head">
+        <p class="eyebrow" id="stream-h">1 · Network flow stream · CIC-IDS2017</p>
+        <h2 class="section-title">Raw flows arrive, 20 at a time</h2>
+        <p class="section-note">
+          Each line is one network flow, shown as a 7-column projection of the 36 features the
+          model actually reads. The bracket is the sliding window the LSTM consumes as a single
+          tensor. Rows are <em>not</em> colored by their true label — the detector does not know
+          it, and neither should you until it has committed to a verdict.
+        </p>
+      </div>
+
+      <div class="stream-panel">
+        <div class="stream-scroll">
+          <div class="stream-cols" id="stream-cols" aria-hidden="true"></div>
+          <div class="stream-viewport" id="stream-viewport" aria-hidden="true">
+            <div class="stream-rail" id="stream-rail"></div>
+            <div class="window-bracket" id="window-bracket">
+              <span class="window-bracket__label" id="bracket-label">WINDOW t−19 → t · 20 × 36</span>
+              <span class="window-bracket__tick tick-tl"></span>
+              <span class="window-bracket__tick tick-tr"></span>
+              <span class="window-bracket__tick tick-bl"></span>
+              <span class="window-bracket__tick tick-br"></span>
+            </div>
+          </div>
+        </div>
+        <div class="stream-foot">
+          <span>window <span id="foot-window">—</span> · rows <span id="foot-rows">—</span></span>
+          <span id="foot-abs">—</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="connector" aria-hidden="true">
+      <svg width="11" height="37" viewBox="0 0 11 37" fill="none">
+        <path d="M5.5 0 V32" stroke="currentColor" stroke-width="1"/>
+        <path d="M1.5 27.5 L5.5 32.5 L9.5 27.5" stroke="currentColor" stroke-width="1" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- ============ 3. Reconstruction error chart + draggable threshold ============ -->
+    <section aria-labelledby="chart-h">
+      <div class="section-head">
+        <p class="eyebrow" id="chart-h">2 · Detection · LSTM autoencoder</p>
+        <h2 class="section-title">Reconstruction error vs. threshold</h2>
+        <p class="section-note">
+          The autoencoder was trained only on benign traffic, so a window it cannot rebuild is
+          suspicious. <strong>Drag the dashed line</strong> — or focus it and use the arrow keys —
+          to set the cutoff. Nothing here is precomputed as a verdict: every point re-decides
+          itself against wherever you put the line.
+        </p>
+      </div>
+
+      <div class="chart-panel">
+        <div class="chart-plot" id="chart-plot">
+          <svg id="chart" role="img" aria-labelledby="chart-title chart-desc"
+               preserveAspectRatio="none">
+            <title id="chart-title">Reconstruction error per window with draggable anomaly threshold</title>
+            <desc id="chart-desc"></desc>
+          </svg>
+        </div>
+
+        <div class="chart-legend" aria-hidden="true">
+          <span><b class="lg-glyph">·</b> benign (below)</span>
+          <span><b class="lg-glyph">▲</b> flagged anomalous</span>
+          <span><b class="lg-glyph">✕</b> missed attack (below)</span>
+          <span><b class="lg-glyph">?</b> unknown class</span>
+          <span>— — calibrated 0.4444</span>
+        </div>
+
+        <div class="threshold-row">
+          <label class="threshold-hint" for="threshold-num">Threshold</label>
+          <input type="text" inputmode="decimal" class="threshold-num mono" id="threshold-num"
+                 value="0.4444" autocomplete="off" spellcheck="false"
+                 aria-label="Anomaly detection threshold, numeric entry">
+          <button type="button" class="btn" id="btn-calib">Reset to calibrated</button>
+          <span class="threshold-hint" id="threshold-help">
+            Arrow keys ±0.005 · Shift ±0.05 · PageUp/Down ±0.1 · Home/End · Enter snaps to calibrated
+          </span>
+        </div>
+
+        <div class="metrics-strip" id="metrics-strip">
+          <span class="metric"><span class="metric__k">precision</span>
+            <span class="metric__v" id="m-prec">—</span><span class="metric__d" id="m-prec-d"></span></span>
+          <span class="metric"><span class="metric__k">recall</span>
+            <span class="metric__v" id="m-rec">—</span><span class="metric__d" id="m-rec-d"></span></span>
+          <span class="metric"><span class="metric__k">F1</span>
+            <span class="metric__v" id="m-f1">—</span><span class="metric__d" id="m-f1-d"></span></span>
+          <span class="metric"><span class="metric__k">alerts</span>
+            <span class="metric__v" id="m-alerts">—</span><span class="metric__d" id="m-alerts-d"></span></span>
+        </div>
+        <p class="prose-note" id="tradeoff-note"></p>
+      </div>
+    </section>
+
+    <div class="connector" aria-hidden="true">
+      <svg width="11" height="37" viewBox="0 0 11 37" fill="none">
+        <path d="M5.5 0 V32" stroke="currentColor" stroke-width="1"/>
+        <path d="M1.5 27.5 L5.5 32.5 L9.5 27.5" stroke="currentColor" stroke-width="1" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- ============ 4. Verdict ============ -->
+    <section aria-labelledby="verdict-h" class="verdict-wrap">
+      <p class="eyebrow" id="verdict-h" style="text-align:center">3 · Verdict for the current window</p>
+      <p style="margin-top:12px">
+        <span class="verdict verdict--benign" id="verdict">
+          <span class="verdict__glyph" id="verdict-glyph" aria-hidden="true">·</span>
+          <span id="verdict-text">BENIGN</span>
+        </span>
+      </p>
+      <p class="verdict-sub" id="verdict-sub">—</p>
+    </section>
+
+    <div class="connector" aria-hidden="true">
+      <svg width="11" height="37" viewBox="0 0 11 37" fill="none">
+        <path d="M5.5 0 V32" stroke="currentColor" stroke-width="1"/>
+        <path d="M1.5 27.5 L5.5 32.5 L9.5 27.5" stroke="currentColor" stroke-width="1" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- ============ 5. Incident triage queue ============ -->
+    <section aria-labelledby="queue-h">
+      <div class="section-head">
+        <p class="eyebrow" id="queue-h">4 · Classification · XGBoost</p>
+        <h2 class="section-title">Incident triage queue</h2>
+        <p class="section-note">
+          Only flagged windows reach the classifier. XGBoost then names the attack — and because
+          its label space is closed, it will name something even when it should not. Ground truth
+          appears here, after the verdict, never before it.
+        </p>
+      </div>
+      <ul class="queue" id="queue" role="log" aria-live="polite" aria-label="Incident triage queue"></ul>
+      <p class="queue-more" id="queue-more"></p>
+
+      <details class="a11y-table">
+        <summary>Text alternative — last 20 windows analyzed</summary>
+        <div class="table-scroll">
+          <table class="metrics-table" id="a11y-table">
+            <caption>Most recent windows: index, reconstruction error, verdict, class</caption>
+            <thead>
+              <tr><th scope="col">Window</th><th scope="col">Error</th>
+                  <th scope="col">Verdict</th><th scope="col">Class</th>
+                  <th scope="col">Ground truth</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ 6. Honest failure panel ============ -->
+    <section aria-labelledby="fail-h">
+      <div class="section-head">
+        <p class="eyebrow" id="fail-h">5 · What this system gets wrong</p>
+        <h2 class="section-title">The failures, at full size</h2>
+        <p class="section-note">
+          Both numbers below move with the threshold you set. They are the two halves of the same
+          tradeoff: push the line down and you catch more attacks but drown the analyst in false
+          alarms; push it up and the queue gets clean but attacks walk past.
+        </p>
+      </div>
+
+      <div class="failure-panel">
+        <div class="fail-grid">
+          <div class="fail-card fail-card--missed">
+            <p class="fail-card__head"><span aria-hidden="true">✕</span> Missed attacks</p>
+            <p class="fail-card__num" id="fail-missed">—</p>
+            <p class="fail-card__body" id="fail-missed-body">—</p>
+          </div>
+          <div class="fail-card fail-card--fp">
+            <p class="fail-card__head"><span aria-hidden="true">▲</span> False positives</p>
+            <p class="fail-card__num" id="fail-fp">—</p>
+            <p class="fail-card__body" id="fail-fp-body">—</p>
+          </div>
+        </div>
+
+        <p class="prose-note">
+          <b>The structural weakness this slice cannot show you.</b> This replay window contains
+          DoS slowloris and DoS Slowhttptest, but <b>no DoS Hulk</b> — and DoS Hulk is exactly
+          where the pipeline fails. Across the full evaluation set its recall is
+          <b>0.424</b>: DoS Hulk generates syntactically valid HTTP requests whose flow features
+          overlap with benign traffic, so the autoencoder reconstructs them well, the error stays
+          below threshold, and roughly 8,600 of 14,887 attack flows never reach the classifier at
+          all. No threshold you can set on this page will surface that, because those flows are
+          not in this slice. It is the single biggest thing wrong with the system.
+        </p>
+
+        <p class="prose-note">
+          <b>Unknown attacks.</b> The classifier knows four labels: BENIGN, DoS Hulk, DoS
+          Slowhttptest, DoS slowloris. Faced with a GoldenEye or Heartbleed flow it cannot answer
+          "I don't know" — a softmax over a closed label set has no such output — so it returns a
+          confident wrong name. This slice contains no such traffic
+          (<span class="mono">unknown = false</span> throughout), so the card treatment below is
+          specified and implemented but never triggers here. That is a property of the sample, not
+          evidence the problem is solved.
+        </p>
+
+        <div class="table-scroll">
+          <table class="metrics-table">
+            <caption>Full pipeline, complete evaluation set (artifacts/metrics.json)</caption>
+            <thead>
+              <tr><th scope="col">Class</th><th scope="col">Precision</th>
+                  <th scope="col">Recall</th><th scope="col">F1</th><th scope="col">Support</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>BENIGN</td><td>0.724</td><td>0.999</td><td>0.839</td><td>25,466</td></tr>
+              <tr class="row-weak"><td>DoS Hulk</td><td>0.998</td><td>0.424</td><td>0.596</td><td>14,887</td></tr>
+              <tr><td>DoS Slowhttptest</td><td>0.998</td><td>0.898</td><td>0.945</td><td>5,499</td></tr>
+              <tr><td>DoS slowloris</td><td>0.994</td><td>0.855</td><td>0.919</td><td>4,129</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="compare">
+          <div class="compare-row">
+            <span>XGBoost alone <span class="compare-note">— labels available</span></span>
+            <b class="compare-val">0.996 accuracy</b>
+          </div>
+          <div class="compare-row">
+            <span>LSTM detector alone <span class="compare-note">— unsupervised, binary</span></span>
+            <b class="compare-val">0.696 accuracy</b>
+          </div>
+          <div class="compare-row compare-row--hero">
+            <span><b>Full pipeline</b> <span class="compare-note">— the honest number</span></span>
+            <b class="compare-val">0.805 accuracy</b>
+          </div>
+        </div>
+
+        <p class="prose-note">
+          The classifier is near-perfect and the detector is the bottleneck. Chaining them means
+          the pipeline inherits the detector's misses, and 0.805 is what that costs. Reporting the
+          0.996 alone would be the more flattering number and the less true one.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="page-footer prose">
+    <p>
+      Final project, <em>Curso Intensivo en Inteligencia Artificial</em> (CEI Seville).
+      Dataset: CIC-IDS2017 (MachineLearningCVE), Canadian Institute for Cybersecurity,
+      University of New Brunswick.
+    </p>
+    <p class="mono" style="font-size:12px">
+      All inference ran offline; this page replays a precomputed feed and recomputes only the
+      threshold decision. Metrics quoted from <span>artifacts/metrics.json</span>.
+    </p>
+  </footer>
+
+</div>
+
+<script src="demo.js"></script>
+</body>
+</html>
