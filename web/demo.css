@@ -68,6 +68,7 @@
   --text-xl:   20px;
   --text-2xl:  24px;
   --text-3xl:  30px;
+  --text-4xl:  40px;   /* Tailwind text-4xl; §3.2 lists the ramp without it */
   --text-5xl:  48px;
 
   /* ---- Spacing (4px base) ---- */
@@ -248,9 +249,24 @@ a { color: inherit; }
   padding-inline: var(--gutter);
 }
 
-.prose { max-width: var(--w-prose); margin-inline: auto; }
+/* Prose keeps the 760px reading measure (§4.2) but is left-aligned to the
+   demo column rather than centred in the page, so the intro, the demo panels
+   and the footer all share one left edge. */
+.prose {
+  max-width: var(--w-prose);
+  margin-inline: 0;
+}
 
 .demo { max-width: var(--w-demo); margin-inline: auto; }
+
+/* The demo column is the alignment reference: centre the shared 1120px block
+   and hang the prose off its left edge. */
+.wrap > .page-header,
+.wrap > .demo-intro,
+.wrap > .page-footer {
+  max-width: var(--w-demo);
+  margin-inline: auto;
+}
 
 .stack > * + * { margin-top: var(--sp-10); }
 
@@ -271,8 +287,9 @@ a { color: inherit; }
 
 .page-header {
   padding-block: var(--sp-16) var(--sp-12);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: var(--sp-12);
+  /* No border-bottom: .demo-intro's border-top already draws the divider
+     between the project intro and the demo. Both would stack as two rules. */
+  margin-bottom: 0;
 }
 .page-title {
   font-size: var(--text-3xl);
@@ -281,7 +298,9 @@ a { color: inherit; }
   margin-bottom: var(--sp-4);
 }
 @media (min-width: 768px) {
-  .page-title { font-size: var(--text-5xl); letter-spacing: -0.035em; }
+  /* 40px, not 48px: at 48 the Spanish title wraps to two lines in the 760px
+     prose column. Tracking eases to -0.03em to suit the smaller size. */
+  .page-title { font-size: var(--text-4xl); letter-spacing: -0.03em; }
 }
 .page-lede {
   font-size: var(--text-lg);
@@ -307,6 +326,88 @@ a { color: inherit; }
   align-items: center; justify-content: space-between;
   margin-bottom: var(--sp-6);
 }
+
+/* ---------- Language switcher + intro ---------- */
+
+.lang-bar {
+  display: flex; align-items: center; gap: var(--sp-3);
+  justify-content: flex-end;
+  /* Spans the demo column, not the narrower prose measure, so the switcher
+     lands on the same right edge as the panels below. */
+  max-width: var(--w-demo);
+  margin-bottom: var(--sp-6);
+}
+
+/* Smaller variant of the existing .btn — same border, radius, type and
+   transition, only the padding differs. No new button language (§8). */
+.btn--sm {
+  min-height: 36px;
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--text-xs);
+}
+@media (max-width: 479px) {
+  .btn--sm { min-height: 44px; }   /* touch target on small screens */
+}
+
+.intro-p {
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--fg-muted);
+  margin-top: var(--sp-4);
+}
+.intro-p b { color: var(--fg); font-weight: 600; }
+
+.repo-link-wrap { margin-top: var(--sp-6); }
+
+.repo-link {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  flex-wrap: wrap;
+  max-width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 500 var(--text-sm) var(--font-sans);
+  text-decoration: none;
+  transition: background 150ms var(--ease-std), box-shadow 150ms var(--ease-std);
+}
+.repo-link:hover { background: var(--bg-subtle); box-shadow: var(--shadow-xs); }
+.repo-link__glyph { font-family: var(--font-mono); color: var(--fg-muted); }
+.repo-link__url {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  overflow-wrap: anywhere;   /* the URL is one long unbreakable token */
+  min-width: 0;
+}
+
+/* Below 420px the URL alone is wider than the viewport; the link text and the
+   accessible label both still name the destination. */
+@media (max-width: 419px) {
+  .repo-link__url { display: none; }
+}
+
+/* Demo header: deliberately secondary to the project intro above it. */
+.demo-intro {
+  margin-bottom: var(--sp-12);
+  padding-top: var(--sp-8);
+  border-top: 1px solid var(--border);
+}
+.demo-intro__title {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.02em;
+  margin-top: var(--sp-1);
+}
+.demo-intro__lede {
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--fg-muted);
+  margin-top: var(--sp-3);
+  margin-bottom: var(--sp-6);
+  max-width: var(--w-prose);   /* keep the reading measure (§4.2) */
+}
+.demo-intro__lede strong { color: var(--fg); font-weight: 600; }
 
 /* ---------- Controls ---------- */
 
