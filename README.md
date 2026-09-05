@@ -135,9 +135,11 @@ history, and evaluation metrics to `artifacts/`. Use `--data-dir` or
 
 ## Interactive demo
 
+**[log-anomaly-detector-gold.vercel.app](https://log-anomaly-detector-gold.vercel.app/)**
+
 A static page in `web/` replays the trained pipeline over an **unseen slice** of Wednesday
 traffic (absolute rows 67,250–69,269 — outside the 40k–90k range used to fit XGBoost, and
-the scaler was fitted on Monday benign traffic only). Open it directly:
+the scaler was fitted on Monday benign traffic only). To run it locally instead:
 
 ```bash
 open web/index.html          # macOS; or just open the file in a browser
