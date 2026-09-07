@@ -135,7 +135,7 @@ history, and evaluation metrics to `artifacts/`. Use `--data-dir` or
 
 ## Interactive demo
 
-**[log-anomaly-detector-gold.vercel.app](https://log-anomaly-detector-gold.vercel.app/)**
+**[log-anomaly-detector.santiagomorgado.dev](https://log-anomaly-detector.santiagomorgado.dev/)**
 
 A static page in `web/` replays the trained pipeline over an **unseen slice** of Wednesday
 traffic (absolute rows 67,250–69,269 — outside the 40k–90k range used to fit XGBoost, and
