@@ -7,6 +7,22 @@
 <meta name="description" content="Reproducción interactiva de un detector de intrusiones de dos etapas (autoencoder LSTM + XGBoost) sobre CIC-IDS2017. Arrastrá el umbral de anomalía y mirá cómo se recalculan precision, recall y la cola de alertas.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=&apos;http://www.w3.org/2000/svg&apos; viewBox=&apos;0 0 16 16&apos;%3E%3Crect width=&apos;16&apos; height=&apos;16&apos; rx=&apos;3&apos; fill=&apos;%230d0f15&apos;/%3E%3Cpath d=&apos;M2 11 L6 11 L8 5 L10 9 L14 9&apos; stroke=&apos;%23fcbb00&apos; stroke-width=&apos;1.6&apos; fill=&apos;none&apos;/%3E%3C/svg%3E">
 <link rel="stylesheet" href="demo.css">
+<script>
+/* Theme, resolved before first paint: a stored choice, else the system
+   preference. It has to run here in <head> rather than in demo.js, which is
+   loaded at the end of <body>: deferring it flashes the wrong theme for
+   anyone whose saved choice disagrees with their system. Mirrors
+   resolveTheme() and THEME_KEY in demo.js, which recomputes it harmlessly. */
+(function () {
+  var v = null;
+  try { v = localStorage.getItem('lad-theme'); } catch (e) { /* privacy modes throw */ }
+  if (v !== 'dark' && v !== 'light') {
+    v = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', v);
+})();
+</script>
 </head>
 <body>
 
@@ -89,7 +105,7 @@
             El flujo avanza automáticamente un registro cada 420&nbsp;ms.
           </p>
         </div>
-        <div class="controls">
+        <div class="controls" id="playback-controls">
           <button type="button" class="btn btn--primary" id="btn-play"
                   aria-pressed="false">
             <span class="btn__glyph" id="btn-play-glyph" aria-hidden="true">▮▮</span>

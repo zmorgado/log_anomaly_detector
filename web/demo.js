@@ -612,6 +612,62 @@
     try { localStorage.setItem('lad-lang', v); } catch (e) { /* non-fatal */ }
   }
 
+  // ------------------------------------------------------------------- theme
+
+  /* The toggle used to read the current theme straight off the data-theme
+     attribute of <html>. Nothing wrote that attribute until the first click,
+     so on a page rendering dark from `prefers-color-scheme` the read came back
+     null, the handler took that for "not dark", and wrote data-theme="dark" —
+     the theme already on screen. Nothing changed and the click looked lost;
+     the second click wrote "light" and worked. Hence: resolve the theme once
+     at startup so the attribute always holds a real value, and route every
+     read through currentTheme() and every write through applyTheme(). */
+
+  var THEME_KEY = 'lad-theme';
+
+  /* The viewer's explicit choice, held here as well as in localStorage.
+     storeTheme() swallows its failure, so in a browser that blocks storage the
+     choice would otherwise be invisible to the system-preference listener
+     below, which would then undo it the next time the OS switched appearance. */
+  var chosenTheme = null;
+
+  function storedTheme() {
+    try {
+      var v = localStorage.getItem(THEME_KEY);
+      return (v === 'dark' || v === 'light') ? v : null;
+    } catch (e) { return null; }   // privacy modes throw on access
+  }
+
+  function chooseTheme(v) {
+    chosenTheme = v;
+    try { localStorage.setItem(THEME_KEY, v); } catch (e) { /* non-fatal */ }
+  }
+
+  function darkMedia() {
+    return window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  }
+
+  // An explicit choice outranks the system preference. Pure, so the startup
+  // decision is testable without a DOM.
+  function resolveTheme(stored, prefersDark) {
+    if (stored === 'dark' || stored === 'light') return stored;
+    return prefersDark ? 'dark' : 'light';
+  }
+
+  function otherTheme(theme) { return theme === 'dark' ? 'light' : 'dark'; }
+
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var btn = $('btn-theme');
+    if (btn) btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+    var label = $('btn-theme-label');
+    if (label) label.textContent = t(theme === 'dark' ? 'ctrl.light' : 'ctrl.dark');
+  }
+
   /* Numbers follow the locale: Spanish uses '.' as thousands separator. */
   function comma(n) {
     var s = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'es' ? '.' : ',');
@@ -1266,10 +1322,7 @@
     // Controls whose label depends on current state, not just language.
     if (el.btnPlayLabel) el.btnPlayLabel.textContent = t(playing ? 'ctrl.pause' : 'ctrl.play');
     var themeLabel = $('btn-theme-label');
-    if (themeLabel) {
-      themeLabel.textContent =
-        t(document.documentElement.getAttribute('data-theme') === 'dark' ? 'ctrl.light' : 'ctrl.dark');
-    }
+    if (themeLabel) themeLabel.textContent = t(currentTheme() === 'dark' ? 'ctrl.light' : 'ctrl.dark');
     var sw = $('btn-lang');
     if (sw) {
       sw.textContent = t('lang.switchTo');
@@ -1379,6 +1432,42 @@
     else if (w.xgb === 'BENIGN') verdictSpeech = t('live.disagree');
     else verdictSpeech = tf('live.anomalous', w.xgb);
     el.live.textContent = tf('live.analyzed', w.w, fmt(w.err, 2), verdictSpeech);
+  }
+
+  /* §7.4/4 stops autoplay when focus enters the demo region — but the playback
+     controls are inside that region, and a mouse press focuses the button and
+     fires focusin *before* click. So the stop ran inside the very gesture meant
+     to press the button: it set playing=false, then Play/Pause's own click read
+     that fresh value and set it back to true. The press cancelled itself out
+     and looked dead. It only happened when the button was not already focused,
+     which is why a second click always worked and why the keyboard — which
+     activates a button that already has focus — never reproduced it.
+
+     The split that fixes it without giving up §7.4/4 is the one the browser
+     already draws for us: :focus-visible. Keyboard and assistive-tech focus is
+     "visible" (it is what earns a focus ring here, §7.3), and that still stops
+     the stream on every control — a user tabbing in is exactly who §7.4/4 is
+     for. Focus incidental to a pointer press is not visible, and must not run
+     inside the gesture that is pressing the button. Everywhere else in the
+     demo the stop is unconditional, as before. */
+  function isPlaybackControl(node) {
+    return !!(node && node.closest && node.closest('#playback-controls'));
+  }
+
+  // null when the browser does not know the selector, so the caller can choose
+  // its own fallback rather than silently getting `false`.
+  function focusIsVisible(node) {
+    try { return !!(node && node.matches && node.matches(':focus-visible')); }
+    catch (e) { return null; }
+  }
+
+  function shouldStopForFocus(playing, target, visible) {
+    if (!playing) return false;
+    if (!isPlaybackControl(target)) return true;
+    // On the controls: only keyboard/AT focus. Where :focus-visible is
+    // unsupported (visible === null) we keep the press working, because a
+    // Play button that cannot be pressed is the worse failure.
+    return visible === true;
   }
 
   function setPlaying(on) {
@@ -1511,10 +1600,9 @@
       lastAnnounce = Date.now();
     });
     $('btn-theme').addEventListener('click', function () {
-      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-      document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
-      this.setAttribute('aria-pressed', dark ? 'false' : 'true');
-      $('btn-theme-label').textContent = t(dark ? 'ctrl.dark' : 'ctrl.light');
+      var next = otherTheme(currentTheme());
+      applyTheme(next);
+      chooseTheme(next);       // the choice has to survive a reload
       scheduleRender();
     });
 
@@ -1543,9 +1631,10 @@
       if (e.target.closest && e.target.closest('.threshold-grp')) onKey(e);
     });
 
-    // §7.4/4: autoplay stops when focus enters the demo region
-    $('demo').addEventListener('focusin', function () {
-      if (playing) setPlaying(false);
+    // §7.4/4: autoplay stops when focus enters the demo region — see
+    // shouldStopForFocus for what the playback controls do differently.
+    $('demo').addEventListener('focusin', function (evt) {
+      if (shouldStopForFocus(playing, evt.target, focusIsVisible(evt.target))) setPlaying(false);
     });
 
     var rt;
@@ -1621,6 +1710,26 @@
     // Resolve language first: a feed that fails to load must still render the
     // static page in the right language.
     lang = storedLang() || 'es';
+
+    /* index.html stamps data-theme in <head> so the first paint is already the
+       right theme; recomputing it from the same two inputs here is a no-op,
+       and keeps demo.js correct on its own if that inline script ever goes. */
+    var mq = darkMedia();
+    chosenTheme = storedTheme();
+    applyTheme(resolveTheme(chosenTheme, !!(mq && mq.matches)));
+
+    // Follow the system preference only while the viewer has made no choice of
+    // their own, so the listener and the toggle can never fight over the theme.
+    if (mq) {
+      var onScheme = function () {
+        if (chosenTheme) return;
+        applyTheme(resolveTheme(null, mq.matches));
+        if (feed) scheduleRender();
+      };
+      if (mq.addEventListener) mq.addEventListener('change', onScheme);
+      else if (mq.addListener) mq.addListener(onScheme);   // Safari < 14
+    }
+
     applyLang();
     var langBtn = document.getElementById('btn-lang');
     if (langBtn) langBtn.addEventListener('click', function () {
@@ -1643,9 +1752,25 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', load);
-  } else {
-    load();
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', load);
+    } else {
+      load();
+    }
+  }
+
+  /* The decisions behind issue #5 are pure, so they are checked by
+     `node --test web/tests/demo.test.js`. In a browser `module` is undefined
+     and this tail does nothing; the page stays one plain script with no build
+     step and no imports, so the directory still opens over file://. */
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      resolveTheme: resolveTheme,
+      otherTheme: otherTheme,
+      isPlaybackControl: isPlaybackControl,
+      shouldStopForFocus: shouldStopForFocus,
+      THEME_KEY: THEME_KEY
+    };
   }
 })();

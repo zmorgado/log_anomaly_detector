@@ -89,8 +89,15 @@
   --ease-drop:  cubic-bezier(.34, 1.56, .64, 1);
 
   --row-h: 16px;
+  /* Both, so a page with no data-theme (JS off) still follows the OS. The two
+     forced themes below narrow it, or the UA keeps painting its chrome —
+     scrollbars, caret, selection, autofill — in the OS's scheme while the page
+     shows the other one. */
   color-scheme: light dark;
 }
+
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
