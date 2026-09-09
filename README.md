@@ -98,7 +98,8 @@ Network flow (36 features)
 │   ├── index.html
 │   ├── demo.css
 │   ├── demo.js
-│   └── demo_feed.json                # precomputed inference output
+│   ├── demo_feed.json                # precomputed inference output
+│   └── tests/                        # control-behaviour tests (Node, no deps)
 └── memoria.pdf                       # full project report (Spanish)
 ```
 
@@ -150,6 +151,15 @@ into `web/demo_feed.json` (345 KB), so the page only replays results:
 
 ```bash
 python scripts/export_demo.py
+```
+
+The page's controls carry regression tests for the decisions behind their behaviour —
+which theme to start in, when focus is allowed to stop autoplay, and whether the
+theme-stamping script in `index.html`'s `<head>` still agrees with `demo.js`. They need
+Node but no install, because there is nothing to install:
+
+```bash
+node --test web/tests/demo.test.js
 ```
 
 The feed stores the **raw reconstruction error per window**, never a benign/anomalous
