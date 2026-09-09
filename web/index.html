@@ -18,39 +18,62 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-16x16.svg" sizes="16x16" type="image/svg+xml">
 
-<!-- Applies a saved theme and language before first paint. Inline and tiny for
-     that reason: it must run before the body renders. Without it a visitor who
-     arrived from the portfolio's dark page sees this one flash light while
-     demo.js loads, and that flash is conspicuous precisely because they came
-     from a dark page.
+<!-- Theme and language, resolved before first paint. This has to run here in
+     <head> rather than in demo.js, which loads at the end of <body>: deferring
+     it flashes the wrong theme for anyone whose saved choice disagrees with
+     their system, and that flash is conspicuous because visitors arrive here
+     from the portfolio's dark page.
 
-     Preferences are read from a cookie first and localStorage second.
+     Precedence is cookie, then localStorage, then the system preference.
      localStorage is per-origin, so a choice made on santiagomorgado.dev is
      invisible to this subdomain; a cookie scoped to .santiagomorgado.dev is
-     what carries it across. The localStorage fallback is what a visitor who
-     lands here first, or who opens the page over file://, still gets. -->
+     what carries it across. localStorage is the fallback for a visitor who
+     lands here first, or who opens the directory over file://.
+
+     data-theme is stamped unconditionally, even when the answer came from the
+     system: demo.js reads the current theme off that attribute, and leaving it
+     empty is what made the first click on the toggle do nothing (issue #5).
+     Mirrors resolveTheme(), readPref() and THEME_KEY in demo.js, which
+     recompute the same answer harmlessly. web/tests/demo.test.js runs this
+     script against both and fails if the two ever disagree. -->
 <script>
 (function () {
-  try {
-    var d = document.documentElement;
-    var cookie = function (name) {
-      var m = document.cookie.match('(?:^|; *)' + name + '=([^;]*)');
+  var d = document.documentElement;
+  var cookie = function (name) {
+    try {
+      var m = (document.cookie || '').match('(?:^|; *)' + name + '=([^;]*)');
       return m ? decodeURIComponent(m[1]) : null;
-    };
-    var stored = function (key) {
-      try { return localStorage.getItem(key); } catch (e) { return null; }
-    };
+    } catch (e) { return null; }
+  };
+  var stored = function (key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }   // privacy modes throw
+  };
 
-    var t = cookie('theme') || stored('theme');
-    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  /* First *valid* value wins, not first value present: a cookie holding
+     something this page does not understand must fall through to localStorage
+     rather than mask a real choice made here. */
+  var pick = function (cookieName, storageKey, valid) {
+    var v = cookie(cookieName);
+    if (valid(v)) return v;
+    v = stored(storageKey);
+    return valid(v) ? v : null;
+  };
+  var isTheme = function (v) { return v === 'dark' || v === 'light'; };
+  var isLang = function (v) { return v === 'es' || v === 'en'; };
 
-    // 'lad-lang' is what this page wrote before the two sites shared a cookie.
-    var l = cookie('lang') || stored('lang') || stored('lad-lang');
-    if (l === 'es' || l === 'en') {
-      d.setAttribute('lang', l);
-      d.setAttribute('data-lang', l);
-    }
-  } catch (e) { /* private browsing, or storage disabled */ }
+  var t = pick('theme', 'lad-theme', isTheme);
+  if (!t) {
+    t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark' : 'light';
+  }
+  d.setAttribute('data-theme', t);
+
+  // 'lad-lang' is what this page wrote before the two sites shared a cookie.
+  var l = pick('lang', 'lad-lang', isLang);
+  if (l) {
+    d.setAttribute('lang', l);
+    d.setAttribute('data-lang', l);
+  }
 })();
 </script>
 
@@ -75,9 +98,12 @@
          region (WCAG 2.2.2). See the note in demo.js. Sits outside .prose so it
          can align to the right edge of the demo column. -->
     <div class="lang-bar">
-      <span class="eyebrow" data-i18n="lang.label">Idioma</span>
-      <button type="button" class="btn btn--sm" id="btn-lang"
-              data-i18n-aria-label="lang.switchTo">Switch to English</button>
+      <!-- The portfolio's control, to the letter: the button carries the code
+           of the language it switches TO, and nothing else. Deliberately no
+           lang attribute of its own — the one control that switches languages
+           has to survive both of them. -->
+      <button type="button" class="lang-toggle" id="btn-lang"
+              data-i18n-aria-label="lang.switchTo">en</button>
     </div>
 
     <div class="prose">
@@ -142,7 +168,7 @@
             1 flujo / 420&nbsp;ms
           </p>
         </div>
-        <div class="controls">
+        <div class="controls" id="playback-controls">
           <button type="button" class="btn btn--primary" id="btn-play"
                   aria-pressed="false">
             <span class="btn__glyph" id="btn-play-glyph" aria-hidden="true">▮▮</span>

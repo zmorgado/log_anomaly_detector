@@ -134,9 +134,13 @@
           'number</strong> — drag the threshold and watch what moves.'
     },
 
-    // ---- language switcher
-    'lang.label':    { es: 'Idioma', en: 'Language' },
-    'lang.switchTo': { es: 'Switch to English', en: 'Cambiar a español' },
+    /* ---- language switcher
+       The portfolio's, verbatim: the button prints the code of the language it
+       switches TO, and the accessible label is written in that same target
+       language. Both are what santiagomorgado.dev says, so the control reads
+       identically on either side of the subdomain. */
+    'lang.code':     { es: 'en', en: 'es' },
+    'lang.switchTo': { es: 'Read this in English', en: 'Ver en español' },
     'lang.changed':  { es: 'Idioma cambiado a español.', en: 'Language changed to English.' },
 
     // ---- provenance
@@ -542,12 +546,18 @@
      localStorage. localStorage is per-origin, so a visitor who chose dark and
      English on santiagomorgado.dev would otherwise arrive at this subdomain and
      get system defaults again — a visible seam in what is meant to read as one
-     site. The cookie is what carries the choice across; index.html reads it
-     before first paint so the page never flashes the wrong theme.
+     site. The cookie is what carries the choice across; the inline script in
+     index.html reads it before first paint so the page never flashes the wrong
+     theme.
 
-     The portfolio writes the same two cookies, under the same names. Anywhere
-     that is not santiagomorgado.dev — a preview URL, localhost, file:// — the
-     cookie is set without a domain and is simply host-only.
+     The two names differ on purpose. The cookie is shared with the portfolio,
+     so it takes the portfolio's names — `theme` and `lang`. localStorage is
+     this origin's alone and keeps the keys this page has always written, so a
+     visitor who chose a language here before the two sites shared anything
+     still gets it back.
+
+     Anywhere that is not santiagomorgado.dev — a preview URL, localhost,
+     file:// — the cookie is set without a domain and is simply host-only.
 
      Two limits worth knowing. Safari's ITP caps the lifetime of a cookie set
      from script at seven days regardless of the max-age below, so for a Safari
@@ -557,75 +567,106 @@
      made on THIS origin wins — deliberately, because forgetting it would be
      worse than the rare case where the other origin has since moved on. */
   var PREF_DOMAIN = '.santiagomorgado.dev';
+  var THEME_KEY = 'lad-theme';
+  var LANG_KEY = 'lad-lang';
 
-  function readPref(name) {
+  /* First *valid* value wins, not first value present: a cookie holding
+     something this page does not understand — stale, truncated, or written by
+     something else on the domain — must fall through to localStorage rather
+     than mask a real choice made here. */
+  function readPref(cookieName, storageKey, valid) {
+    var v = null;
     try {
-      var m = document.cookie.match('(?:^|; *)' + name + '=([^;]*)');
-      if (m) return decodeURIComponent(m[1]);
+      var m = (document.cookie || '').match('(?:^|; *)' + cookieName + '=([^;]*)');
+      if (m) v = decodeURIComponent(m[1]);
     } catch (e) { /* cookies disabled; fall through to localStorage */ }
-    try { return localStorage.getItem(name); } catch (e) { return null; }
+    if (valid(v)) return v;
+    try { v = localStorage.getItem(storageKey); } catch (e) { v = null; }
+    return valid(v) ? v : null;
   }
 
-  function savePref(name, value) {
-    try { localStorage.setItem(name, value); } catch (e) { /* non-fatal */ }
+  function isLang(v) { return v === 'es' || v === 'en'; }
+  function isTheme(v) { return v === 'dark' || v === 'light'; }
+
+  function savePref(cookieName, storageKey, value) {
+    try { localStorage.setItem(storageKey, value); } catch (e) { /* non-fatal */ }
     try {
       var host = location.hostname || '';
       var shared = host === PREF_DOMAIN.slice(1) ||
                    host.slice(-PREF_DOMAIN.length) === PREF_DOMAIN;
-      document.cookie = name + '=' + encodeURIComponent(value) +
+      document.cookie = cookieName + '=' + encodeURIComponent(value) +
         '; path=/; max-age=31536000; samesite=lax' +
         (shared ? '; domain=' + PREF_DOMAIN : '') +
         (location.protocol === 'https:' ? '; secure' : '');
     } catch (e) { /* file://, or cookies disabled */ }
   }
 
-  function storedLang() {
-    var v = readPref('lang');
-    // What this page wrote before the two sites shared a cookie.
-    if (v !== 'es' && v !== 'en') {
-      try { v = localStorage.getItem('lad-lang'); } catch (e) { v = null; }
-    }
-    return (v === 'es' || v === 'en') ? v : null;
+  function storedLang() { return readPref('lang', LANG_KEY, isLang); }
+
+  function storeLang(v) { savePref('lang', LANG_KEY, v); }
+
+  // ------------------------------------------------------------------- theme
+
+  /* The toggle used to read the current theme straight off the data-theme
+     attribute of <html>. Nothing wrote that attribute until the first click,
+     so on a page rendering dark from `prefers-color-scheme` the read came back
+     null, the handler took that for "not dark", and wrote data-theme="dark" —
+     the theme already on screen. Nothing changed and the click looked lost;
+     the second click wrote "light" and worked. Hence: resolve the theme once
+     at startup so the attribute always holds a real value, and route every
+     read through currentTheme() and every write through applyTheme(). */
+
+  /* The viewer's explicit choice, held here as well as in the cookie and
+     localStorage. chooseTheme() swallows their failures, so in a browser that
+     blocks both the choice would otherwise be invisible to the
+     system-preference listener below, which would then undo it the next time
+     the OS switched appearance. */
+  var chosenTheme = null;
+
+  function storedTheme() { return readPref('theme', THEME_KEY, isTheme); }
+
+  function chooseTheme(v) {
+    chosenTheme = v;
+    savePref('theme', THEME_KEY, v);
   }
 
-  function storeLang(v) { savePref('lang', v); }
+  function darkMedia() {
+    return window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  }
 
-  /* What the document is showing right now. Before a choice has been made that
-     is whatever the system preference resolves to — reading the attribute
-     alone would make the first click a no-op on a system-dark page. */
+  // An explicit choice outranks the system preference. Pure, so the startup
+  // decision is testable without a DOM.
+  function resolveTheme(stored, prefersDark) {
+    if (stored === 'dark' || stored === 'light') return stored;
+    return prefersDark ? 'dark' : 'light';
+  }
+
+  function otherTheme(theme) { return theme === 'dark' ? 'light' : 'dark'; }
+
   function currentTheme() {
-    var stamped = document.documentElement.getAttribute('data-theme');
-    if (stamped === 'light' || stamped === 'dark') return stamped;
-    return window.matchMedia &&
-           window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   }
 
-  function syncThemeButton() {
-    var dark = currentTheme() === 'dark';
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
     var btn = $('btn-theme');
-    if (btn) btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    if (btn) btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
     var label = $('btn-theme-label');
-    if (label) label.textContent = t(dark ? 'ctrl.light' : 'ctrl.dark');
-    syncThemeColor(dark);
+    if (label) label.textContent = t(theme === 'dark' ? 'ctrl.light' : 'ctrl.dark');
+    syncThemeColor(theme);
   }
 
   /* The browser paints its own chrome from <meta name="theme-color">, and the
-     two in the head answer the system preference only. Once a visitor has
-     chosen — and the choice persists — a system-light phone would otherwise
-     show a dark page under a light bar. Narrowing the media queries to the
-     chosen theme is what keeps the bar above the viewport in step with the
-     ground below it. */
-  function syncThemeColor(dark) {
+     two in the head answer the system preference only. The page resolves its
+     theme itself and persists the answer, so a system-light phone showing a
+     dark page would otherwise sit under a light bar. Narrowing the two media
+     queries to the theme actually on screen is what keeps the bar above the
+     viewport in step with the ground below it. */
+  function syncThemeColor(theme) {
     var light = $('theme-color-light');
     var night = $('theme-color-dark');
     if (!light || !night) return;
-    var chosen = document.documentElement.getAttribute('data-theme');
-    if (chosen !== 'light' && chosen !== 'dark') {
-      // No choice made: hand both back to the system preference.
-      light.setAttribute('media', '(prefers-color-scheme: light)');
-      night.setAttribute('media', '(prefers-color-scheme: dark)');
-      return;
-    }
+    var dark = theme === 'dark';
     light.setAttribute('media', dark ? 'not all' : 'all');
     night.setAttribute('media', dark ? 'all' : 'not all');
   }
@@ -1309,12 +1350,12 @@
 
     // Controls whose label depends on current state, not just language.
     if (el.btnPlayLabel) el.btnPlayLabel.textContent = t(playing ? 'ctrl.pause' : 'ctrl.play');
-    syncThemeButton();
+    // Re-labels the toggle in the new language; applyTheme() owns it otherwise.
+    applyTheme(currentTheme());
     var sw = $('btn-lang');
     if (sw) {
-      sw.textContent = t('lang.switchTo');
-      // The button's own label is in the *target* language, so state the action
-      // explicitly for assistive tech rather than relying on that text alone.
+      // Two letters carry no verb, so the accessible label states the action.
+      sw.textContent = t('lang.code');
       sw.setAttribute('aria-label', t('lang.switchTo'));
     }
     if (reduceMotion && $('controls-note')) {
@@ -1419,6 +1460,42 @@
     else if (w.xgb === 'BENIGN') verdictSpeech = t('live.disagree');
     else verdictSpeech = tf('live.anomalous', w.xgb);
     el.live.textContent = tf('live.analyzed', w.w, fmt(w.err, 2), verdictSpeech);
+  }
+
+  /* §7.4/4 stops autoplay when focus enters the demo region — but the playback
+     controls are inside that region, and a mouse press focuses the button and
+     fires focusin *before* click. So the stop ran inside the very gesture meant
+     to press the button: it set playing=false, then Play/Pause's own click read
+     that fresh value and set it back to true. The press cancelled itself out
+     and looked dead. It only happened when the button was not already focused,
+     which is why a second click always worked and why the keyboard — which
+     activates a button that already has focus — never reproduced it.
+
+     The split that fixes it without giving up §7.4/4 is the one the browser
+     already draws for us: :focus-visible. Keyboard and assistive-tech focus is
+     "visible" (it is what earns a focus ring here, §7.3), and that still stops
+     the stream on every control — a user tabbing in is exactly who §7.4/4 is
+     for. Focus incidental to a pointer press is not visible, and must not run
+     inside the gesture that is pressing the button. Everywhere else in the
+     demo the stop is unconditional, as before. */
+  function isPlaybackControl(node) {
+    return !!(node && node.closest && node.closest('#playback-controls'));
+  }
+
+  // null when the browser does not know the selector, so the caller can choose
+  // its own fallback rather than silently getting `false`.
+  function focusIsVisible(node) {
+    try { return !!(node && node.matches && node.matches(':focus-visible')); }
+    catch (e) { return null; }
+  }
+
+  function shouldStopForFocus(playing, target, visible) {
+    if (!playing) return false;
+    if (!isPlaybackControl(target)) return true;
+    // On the controls: only keyboard/AT focus. Where :focus-visible is
+    // unsupported (visible === null) we keep the press working, because a
+    // Play button that cannot be pressed is the worse failure.
+    return visible === true;
   }
 
   function setPlaying(on) {
@@ -1555,22 +1632,11 @@
        there is nothing to redraw. Hardcoded hex in a canvas call would not
        have that property; this is why the chart is not a canvas. */
     $('btn-theme').addEventListener('click', function () {
-      var next = currentTheme() === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      savePref('theme', next);
-      syncThemeButton();
+      var next = otherTheme(currentTheme());
+      applyTheme(next);
+      chooseTheme(next);       // has to survive a reload, and reach the portfolio
     });
 
-    // Follow the system preference for as long as the visitor has not chosen:
-    // only the button's own label needs to catch up.
-    if (window.matchMedia) {
-      var scheme = window.matchMedia('(prefers-color-scheme: dark)');
-      var onScheme = function () {
-        if (!document.documentElement.getAttribute('data-theme')) syncThemeButton();
-      };
-      if (scheme.addEventListener) scheme.addEventListener('change', onScheme);
-      else if (scheme.addListener) scheme.addListener(onScheme);
-    }
 
     // Accepts a comma decimal separator too — the field is type=text so that
     // its value is always dot-formatted regardless of browser locale.
@@ -1597,9 +1663,10 @@
       if (e.target.closest && e.target.closest('.threshold-grp')) onKey(e);
     });
 
-    // §7.4/4: autoplay stops when focus enters the demo region
-    $('demo').addEventListener('focusin', function () {
-      if (playing) setPlaying(false);
+    // §7.4/4: autoplay stops when focus enters the demo region — see
+    // shouldStopForFocus for what the playback controls do differently.
+    $('demo').addEventListener('focusin', function (evt) {
+      if (shouldStopForFocus(playing, evt.target, focusIsVisible(evt.target))) setPlaying(false);
     });
 
     var rt;
@@ -1675,6 +1742,26 @@
     // Resolve language first: a feed that fails to load must still render the
     // static page in the right language.
     lang = storedLang() || 'es';
+
+    /* index.html stamps data-theme in <head> so the first paint is already the
+       right theme; recomputing it from the same two inputs here is a no-op,
+       and keeps demo.js correct on its own if that inline script ever goes. */
+    var mq = darkMedia();
+    chosenTheme = storedTheme();
+    applyTheme(resolveTheme(chosenTheme, !!(mq && mq.matches)));
+
+    // Follow the system preference only while the viewer has made no choice of
+    // their own, so the listener and the toggle can never fight over the theme.
+    if (mq) {
+      var onScheme = function () {
+        if (chosenTheme) return;
+        applyTheme(resolveTheme(null, mq.matches));
+        if (feed) scheduleRender();
+      };
+      if (mq.addEventListener) mq.addEventListener('change', onScheme);
+      else if (mq.addListener) mq.addListener(onScheme);   // Safari < 14
+    }
+
     applyLang();
     var langBtn = document.getElementById('btn-lang');
     if (langBtn) langBtn.addEventListener('click', function () {
@@ -1697,9 +1784,26 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', load);
-  } else {
-    load();
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', load);
+    } else {
+      load();
+    }
+  }
+
+  /* The decisions behind issue #5 are pure, so they are checked by
+     `node --test web/tests/demo.test.js`. In a browser `module` is undefined
+     and this tail does nothing; the page stays one plain script with no build
+     step and no imports, so the directory still opens over file://. */
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      resolveTheme: resolveTheme,
+      otherTheme: otherTheme,
+      isPlaybackControl: isPlaybackControl,
+      shouldStopForFocus: shouldStopForFocus,
+      THEME_KEY: THEME_KEY,
+      LANG_KEY: LANG_KEY
+    };
   }
 })();

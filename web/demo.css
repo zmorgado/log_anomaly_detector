@@ -285,14 +285,40 @@ a:hover { border-bottom-color: var(--signal); }
   margin-bottom: var(--sp-6);
 }
 
-.btn--sm {
-  min-height: 36px;
-  padding: var(--sp-1) var(--sp-3);
+/* Copied from zmorgado/portfolio app/page.module.css, where it styles the
+   masthead's language toggle. Same values, so the control a visitor pressed on
+   the way in is the same control they find here. */
+.lang-toggle {
+  position: relative;
+  font-family: var(--font-mono);
   font-size: 11px;
+  color: var(--pencil);
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 6px 10px;
+  min-width: 44px;
+  min-height: 32px;
+  cursor: pointer;
+  transition: color var(--duration) var(--ease),
+              border-color var(--duration) var(--ease);
 }
-@media (max-width: 479px) {
-  .btn--sm { min-height: 44px; }   /* touch target on small screens */
+
+/* The touch target, 44px tall, centred on a control that prints at 32. Both
+   numbers are deliberate: a control drawn 44px tall would be the loudest thing
+   in a header, and a target smaller than 44px is one a thumb misses. So the box
+   a finger lands on is larger than the box the eye reads. */
+.lang-toggle::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
 }
+
+.lang-toggle:hover { color: var(--ink); border-color: var(--pencil); }
 
 .intro-p {
   font-size: var(--text-lg);
