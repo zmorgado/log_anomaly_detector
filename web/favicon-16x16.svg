@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!--
+    The same mark as favicon.svg, drawn again for 16px rather than scaled to
+    it. Three things the large drawing does cannot survive rasterisation at
+    this size, and were tried before being dropped: the dashed Threshold
+    smears into a grey bar, so it prints solid; the open circle on the missed
+    flow fills in to a pink blob, so it prints solid too; and the quiet flows
+    and the baseline rule land under one pixel of contrast and read as dirt.
+
+    What is left is the argument itself — a line, a flow over it, a flow under
+    it — with every stroke on a half-integer so a 1px line lands on one row of
+    pixels instead of straddling two.
+
+    Literal inks for the reason given in favicon.svg: a favicon never sees the
+    token layer. Keep the two drawings in step by hand.
+  -->
+  <style>
+    .ground { fill: #fcfcfb }
+    .ink    { stroke: #1c1b19 }
+    .signal { stroke: #0e6a86 }
+    .signal-fill { fill: #0e6a86 }
+    .alert  { stroke: #b23a28 }
+    .alert-fill { fill: #b23a28 }
+    @media (prefers-color-scheme: dark) {
+      .ground { fill: #121211 }
+      .ink    { stroke: #ecebe7 }
+      .signal { stroke: #5fb2ce }
+      .signal-fill { fill: #5fb2ce }
+      .alert  { stroke: #e0796a }
+      .alert-fill { fill: #e0796a }
+    }
+    line { fill: none }
+  </style>
+
+  <rect class="ground" width="16" height="16" rx="1"/>
+
+  <!-- The Threshold. -->
+  <line class="ink" x1="2" y1="6.5" x2="14" y2="6.5" stroke-width="1"/>
+
+  <!-- Over the line, and flagged. -->
+  <line class="signal" x1="6.5" y1="13" x2="6.5" y2="3.5" stroke-width="1"/>
+  <circle class="signal-fill" cx="6.5" cy="3.5" r="1.4"/>
+
+  <!-- Under it, and never caught. -->
+  <line class="alert" x1="10.5" y1="13" x2="10.5" y2="9.5" stroke-width="1"/>
+  <circle class="alert-fill" cx="10.5" cy="9.5" r="1.4"/>
+</svg>

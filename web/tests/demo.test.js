@@ -112,31 +112,42 @@ test('two toggles return to where they started', function () {
    the exact flash the inline script exists to prevent. So run that copy here,
    against stubs, and hold it to resolveTheme()'s answer for every input. */
 
-function runHeadScript(stored, prefersDark, storageThrows) {
+function runHeadScript(stored, prefersDark, storageThrows, opts) {
+  opts = opts || {};
   var html = require('node:fs').readFileSync(
     require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
   var m = html.match(/<script>([\s\S]*?)<\/script>/);
   assert.ok(m, 'index.html should carry an inline head script');
 
-  var stamped = null;
+  var stamped = {};
+  var doc = {
+    documentElement: { setAttribute: function (k, v) { stamped[k] = v; } }
+  };
+  // A getter, so a browser that refuses cookies throws on access the way a
+  // real one does rather than quietly reading as undefined.
+  Object.defineProperty(doc, 'cookie', {
+    get: function () {
+      if (opts.cookieThrows) throw new Error('cookies blocked');
+      return opts.cookie || '';
+    }
+  });
+
   var stubs = {
     localStorage: {
       getItem: function (k) {
         if (storageThrows) throw new Error('storage blocked');
-        return k === demo.THEME_KEY ? stored : null;
+        if (k === demo.THEME_KEY) return stored;
+        if (k === demo.LANG_KEY) return opts.storedLang || null;
+        return null;
       }
     },
     matchMedia: function (q) { return { matches: q.indexOf('dark') !== -1 && prefersDark }; },
-    document: {
-      documentElement: {
-        setAttribute: function (k, v) { if (k === 'data-theme') stamped = v; }
-      }
-    }
+    document: doc
   };
   stubs.window = stubs;
   new Function('window', 'document', 'localStorage',
     m[1])(stubs, stubs.document, stubs.localStorage);
-  return stamped;
+  return opts.all ? stamped : (stamped['data-theme'] === undefined ? null : stamped['data-theme']);
 }
 
 test("index.html's head script agrees with resolveTheme on every input", function () {
@@ -161,4 +172,72 @@ test('the head script reads the key demo.js writes', function () {
     require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
   assert.ok(html.indexOf("'" + demo.THEME_KEY + "'") !== -1,
     'the inline script should use THEME_KEY (' + demo.THEME_KEY + ')');
+});
+
+// ------------------------------------------------- the cross-subdomain cookie
+
+/* localStorage is per-origin, so a choice made on santiagomorgado.dev cannot
+   be seen from this subdomain. A cookie scoped to .santiagomorgado.dev is what
+   carries it across, which makes it a third input to the head script's
+   decision — and the one the visitor most recently expressed, so it wins. */
+
+test('the cookie outranks this origin\'s own localStorage', function () {
+  // Arrived from the portfolio having just chosen light there, while this
+  // origin still remembers the dark they chose here last month.
+  assert.strictEqual(
+    runHeadScript('dark', true, false, { cookie: 'theme=light' }), 'light');
+  assert.strictEqual(
+    runHeadScript('light', false, false, { cookie: 'theme=dark' }), 'dark');
+});
+
+test('with no cookie the answer is the one localStorage already gave', function () {
+  assert.strictEqual(runHeadScript('dark', false, false, { cookie: '' }), 'dark');
+  assert.strictEqual(runHeadScript(null, true, false, { cookie: '' }), 'dark');
+  assert.strictEqual(runHeadScript(null, false, false, { cookie: '' }), 'light');
+});
+
+test('a junk cookie falls through rather than being stamped', function () {
+  assert.strictEqual(
+    runHeadScript('dark', false, false, { cookie: 'theme=sepia' }), 'dark');
+  assert.strictEqual(
+    runHeadScript(null, true, false, { cookie: 'theme=' }), 'dark');
+});
+
+test('the cookie is found among others, not only on its own', function () {
+  assert.strictEqual(
+    runHeadScript(null, false, false, { cookie: 'lang=en; theme=dark; _ga=1' }), 'dark');
+  // A name that merely ends with "theme" must not be mistaken for it.
+  assert.strictEqual(
+    runHeadScript(null, false, false, { cookie: 'sitetheme=dark' }), 'light');
+});
+
+test('the page still paints when cookies and storage both refuse', function () {
+  // Between them these are every way the two reads can fail; the theme has to
+  // be stamped regardless, because demo.js reads the current theme off it.
+  assert.strictEqual(
+    runHeadScript(null, true, true, { cookieThrows: true }), 'dark');
+  assert.strictEqual(
+    runHeadScript(null, false, true, { cookieThrows: true }), 'light');
+});
+
+test('language is stamped from the cookie, then localStorage, else not at all', function () {
+  var fromCookie = runHeadScript(null, false, false, { cookie: 'lang=en', all: true });
+  assert.strictEqual(fromCookie.lang, 'en');
+  assert.strictEqual(fromCookie['data-lang'], 'en');
+
+  var fromStorage = runHeadScript(null, false, false, { storedLang: 'en', all: true });
+  assert.strictEqual(fromStorage.lang, 'en');
+
+  // Spanish is the original, so an unset language is left for the markup to
+  // declare rather than stamped over.
+  var unset = runHeadScript(null, false, false, { all: true });
+  assert.strictEqual(unset.lang, undefined);
+  assert.strictEqual(unset['data-lang'], undefined);
+});
+
+test('the head script reads the language key demo.js writes', function () {
+  var html = require('node:fs').readFileSync(
+    require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
+  assert.ok(html.indexOf("'" + demo.LANG_KEY + "'") !== -1,
+    'the inline script should use LANG_KEY (' + demo.LANG_KEY + ')');
 });
