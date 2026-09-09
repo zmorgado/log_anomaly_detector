@@ -99,44 +99,23 @@
       en: 'Network traffic anomaly detector'
     },
     'intro.p1': {
-      es: 'Un sistema híbrido de dos etapas que detecta y clasifica amenazas de seguridad en ' +
-          'tráfico de red. Un <b>autoencoder LSTM no supervisado</b>, entrenado únicamente con ' +
-          'tráfico benigno, marca como anómalos los flujos que no logra reconstruir bien; ' +
-          'un <b>clasificador XGBoost multiclase supervisado</b> le pone nombre a la amenaza ' +
-          'en los flujos que quedaron marcados.',
-      en: 'A hybrid two-stage system that detects and classifies security threats in network ' +
-          'traffic. An <b>unsupervised LSTM autoencoder</b>, trained only on benign traffic, ' +
-          'flags the flows it cannot reconstruct well as anomalous; a <b>supervised ' +
-          'multiclass XGBoost classifier</b> names the threat for the flows that were flagged.'
+      es: 'Un sistema híbrido de dos etapas: un <b>autoencoder LSTM no supervisado</b>, ' +
+          'entrenado solo con tráfico benigno, marca los flujos que no logra reconstruir; un ' +
+          '<b>clasificador XGBoost</b> le pone nombre a la amenaza en los que quedaron marcados.',
+      en: 'A hybrid two-stage system: an <b>unsupervised LSTM autoencoder</b>, trained only on ' +
+          'benign traffic, flags the flows it cannot reconstruct; an <b>XGBoost classifier</b> ' +
+          'names the threat for the ones that were flagged.'
     },
+    /* Why the project exists — the one thing here no chart or table on this
+       page shows. The paragraph that used to follow this one restated the
+       metrics table and the failure panel, so it is gone. */
     'intro.p2': {
-      es: 'El motivo es concreto: los equipos de un SOC reciben más alertas de las que pueden ' +
-          'revisar, y buena parte del trabajo calificado se va en triar incidentes que ' +
-          'terminan siendo irrelevantes. La idea es automatizar ese triaje para los ataques ' +
-          'conocidos y dejar que los analistas se concentren en los que no lo son. Al no ser ' +
-          'supervisada, la primera etapa puede marcar ataques que nunca vio.',
-      en: 'The reason is concrete: SOC teams receive more alerts than they can review, and much ' +
-          'of that skilled work goes into triaging incidents that turn out to be irrelevant. ' +
-          'The idea is to automate that triage for known attacks and let analysts concentrate ' +
-          'on the ones that are not. Being unsupervised, the first stage can flag attacks it ' +
+      es: 'Los equipos de un SOC reciben más alertas de las que pueden revisar. La idea es ' +
+          'automatizar el triaje de los ataques conocidos; al no ser supervisada, la primera ' +
+          'etapa además puede marcar ataques que nunca vio.',
+      en: 'SOC teams receive more alerts than they can review. The idea is to automate triage ' +
+          'for the known attacks; being unsupervised, the first stage can also flag attacks it ' +
           'has never seen.'
-    },
-    'intro.p3': {
-      es: 'Qué logra y qué no. El pipeline completo alcanza <b>0.805 de accuracy</b>. ' +
-          'XGBoost por separado llega a 0.996 cuando tiene labels disponibles, y el detector ' +
-          'LSTM por separado a 0.696: el cuello de botella es la detección, no la ' +
-          'clasificación. La consecuencia más visible es el recall de <b>0.424</b> en DoS ' +
-          'Hulk — genera pedidos HTTP sintácticamente válidos cuyas características de flujo ' +
-          'se superponen con el tráfico benigno, así que el autoencoder los reconstruye bien y ' +
-          'su error queda por debajo del umbral. Encadenar las dos etapas hace que el pipeline ' +
-          'herede esas fallas.',
-      en: 'What it achieves and what it does not. The full pipeline reaches <b>0.805 ' +
-          'accuracy</b>. XGBoost on its own reaches 0.996 when labels are available, and the ' +
-          'LSTM detector on its own 0.696: the bottleneck is detection, not classification. ' +
-          'The most visible consequence is DoS Hulk recall of <b>0.424</b> — it generates ' +
-          'syntactically valid HTTP requests whose flow features overlap with benign traffic, ' +
-          'so the autoencoder reconstructs them well and their error stays below the ' +
-          'threshold. Chaining the two stages means the pipeline inherits those failures.'
     },
     'intro.repo': { es: 'Código y documentación', en: 'Code and documentation' },
     'intro.repoAria': {
@@ -147,17 +126,12 @@
     // ---- demo header (secondary)
     'demo.eyebrow': { es: 'Demo interactiva', en: 'Interactive demo' },
     'demo.title':   { es: 'El umbral es todo el sistema', en: 'The threshold is the whole system' },
+    /* One sentence of orientation. The drawings below say the rest. */
     'demo.lede': {
-      es: 'El autoencoder puntúa cada ventana de 20 flujos según lo mal que la reconstruye. ' +
-          'Todo lo que supera el umbral se marca y pasa al clasificador. ' +
-          '<strong>Todo lo que ves acá se recalcula en tu navegador a partir de un solo ' +
-          'número</strong>: arrastralo y mirá cómo se mueven los veredictos, la cola de ' +
-          'alertas y el balance entre precision y recall.',
-      en: 'The autoencoder scores every 20-flow window by how badly it reconstructs it. ' +
-          'Anything above the threshold is flagged and handed to the classifier. ' +
-          '<strong>Everything you see here is recomputed in your browser from one ' +
-          'number</strong> — drag it and watch the verdicts, the alert queue and the ' +
-          'precision/recall tradeoff move with it.'
+      es: '<strong>Todo lo que sigue se recalcula en tu navegador a partir de un solo ' +
+          'número</strong>: arrastrá el umbral y mirá qué se mueve.',
+      en: '<strong>Everything below is recomputed in your browser from a single ' +
+          'number</strong> — drag the threshold and watch what moves.'
     },
 
     // ---- language switcher
@@ -180,26 +154,24 @@
     // ---- noscript
     'noscript.strong': { es: 'JavaScript está desactivado.', en: 'JavaScript is disabled.' },
     'noscript.body': {
-      es: 'La reproducción interactiva lo necesita. Los resultados medidos no cambian y se ' +
-          'indican acá: el pipeline completo obtiene <b>0.805 de accuracy</b>, con un ' +
-          'recall de <b>0.424</b> en DoS Hulk — el cuello de botella es el detector, ' +
-          'no el clasificador. XGBoost por separado alcanza 0.996 de accuracy cuando tiene ' +
-          'labels disponibles; el detector LSTM por separado, 0.696.',
-      en: 'The interactive replay needs it. The measured results are unchanged and are stated ' +
-          'here: the full pipeline scores <b>0.805 accuracy</b>, with DoS Hulk recall at ' +
-          '<b>0.424</b> — the detector, not the classifier, is the bottleneck. XGBoost alone ' +
-          'reaches 0.996 accuracy when labels are available; the LSTM detector alone 0.696.'
+      es: 'La reproducción interactiva lo necesita. Los resultados medidos no cambian: el ' +
+          'pipeline completo obtiene <b>0.805 de accuracy</b> contra el 0.996 de XGBoost por ' +
+          'separado, y el recall en DoS Hulk es de <b>0.424</b>.',
+      en: 'The interactive replay needs it. The measured results are unchanged: the full ' +
+          'pipeline scores <b>0.805 accuracy</b> against XGBoost\'s 0.996 on its own, and DoS ' +
+          'Hulk recall is <b>0.424</b>.'
     },
 
     // ---- playback controls
     'ctrl.eyebrow': { es: 'Reproducción', en: 'Playback' },
+    /* Legends, not prose: they annotate the controls beside them. */
     'ctrl.note': {
-      es: 'El flujo avanza automáticamente un registro cada 420&nbsp;ms. Podés pausarlo cuando quieras.',
-      en: 'The stream auto-advances one flow every 420&nbsp;ms. Pause it at any time.'
+      es: '1 flujo / 420&nbsp;ms',
+      en: '1 flow / 420&nbsp;ms'
     },
     'ctrl.noteReduced': {
-      es: 'El movimiento reducido está activado, así que el flujo arranca pausado. Usá «Avanzar una ventana» para avanzar.',
-      en: 'Reduced motion is on, so the stream starts paused. Use “Step one window” to advance.'
+      es: 'movimiento reducido · arranca en pausa',
+      en: 'reduced motion · starts paused'
     },
     'ctrl.pause': { es: 'Pausar', en: 'Pause' },
     'ctrl.play':  { es: 'Reproducir', en: 'Play' },
@@ -211,15 +183,10 @@
     'stream.eyebrow': { es: '1 · Flujo de red · CIC-IDS2017', en: '1 · Network flow stream · CIC-IDS2017' },
     'stream.title':   { es: 'Los flujos llegan de 20 en 20', en: 'Raw flows arrive, 20 at a time' },
     'stream.note': {
-      es: 'Cada línea es un flujo de red, mostrado como una proyección de 7 columnas de las 36 ' +
-          'características que lee el modelo. El marco es la ventana deslizante que el LSTM ' +
-          'consume como un único tensor. Las filas <em>no</em> se colorean según su label ' +
-          'real: el detector no lo conoce, y vos tampoco deberías conocerlo hasta que haya ' +
-          'emitido un veredicto.',
-      en: 'Each line is one network flow, shown as a 7-column projection of the 36 features the ' +
-          'model actually reads. The bracket is the sliding window the LSTM consumes as a ' +
-          'single tensor. Rows are <em>not</em> colored by their true label — the detector does ' +
-          'not know it, and neither should you until it has committed to a verdict.'
+      es: 'Siete de las 36 características que lee el modelo; las filas <em>no</em> se colorean ' +
+          'por su label real, porque el detector todavía no lo conoce.',
+      en: 'Seven of the 36 features the model reads; rows are <em>not</em> coloured by their ' +
+          'true label, because the detector does not know it yet.'
     },
     'stream.window': { es: 'ventana', en: 'window' },
     'stream.rows':   { es: 'filas', en: 'rows' },
@@ -229,16 +196,8 @@
     // ---- chart section
     'chart.eyebrow': { es: '2 · Detección · autoencoder LSTM', en: '2 · Detection · LSTM autoencoder' },
     'chart.title':   { es: 'Error de reconstrucción frente al umbral', en: 'Reconstruction error vs. threshold' },
-    'chart.note': {
-      es: 'El autoencoder se entrenó solo con tráfico benigno, así que una ventana que no ' +
-          'logra reconstruir resulta sospechosa. <strong>Arrastrá la línea punteada</strong> ' +
-          '—o enfocala y usá las flechas del teclado— para fijar el corte. Acá no hay ningún ' +
-          'veredicto precalculado: cada punto se vuelve a decidir contra donde vos pongas la línea.',
-      en: 'The autoencoder was trained only on benign traffic, so a window it cannot rebuild is ' +
-          'suspicious. <strong>Drag the dashed line</strong> — or focus it and use the arrow ' +
-          'keys — to set the cutoff. Nothing here is precomputed as a verdict: every point ' +
-          're-decides itself against wherever you put the line.'
-    },
+    /* No note: the axis, the legend, the handle and the keyboard legend say
+       everything the deleted paragraph said. */
     'chart.svgTitle': {
       es: 'Error de reconstrucción por ventana con umbral de anomalía arrastrable',
       en: 'Reconstruction error per window with draggable anomaly threshold'
@@ -251,17 +210,21 @@
 
     'legend.benign':  { es: '· benigno (por debajo)', en: '· benign (below)' },
     'legend.anom':    { es: '▲ marcado como anómalo', en: '▲ flagged anomalous' },
-    'legend.missed':  { es: '✕ ataque no detectado (por debajo)', en: '✕ missed attack (below)' },
-    'legend.unknown': { es: '? clase desconocida', en: '? unknown class' },
+    /* Each glyph is the mark the chart actually draws for that state. */
+    'legend.missed':  { es: '○ ataque no detectado (por debajo)', en: '○ missed attack (below)' },
+    'legend.unknown': { es: '◇ clase desconocida', en: '◇ unknown class' },
     'legend.calib':   { es: '— — calibrado 0.4444', en: '— — calibrated 0.4444' },
 
     'thr.label':  { es: 'Umbral', en: 'Threshold' },
     'thr.aria':   { es: 'Umbral de detección de anomalías, entrada numérica',
                     en: 'Anomaly detection threshold, numeric entry' },
     'thr.reset':  { es: 'Volver al calibrado', en: 'Reset to calibrated' },
+    /* A legend for the control it sits beside, not a sentence about it. Still
+       the accessible description for the slider, so it stays in words a screen
+       reader can read aloud rather than in arrow glyphs. */
     'thr.help': {
-      es: 'Flechas ±0.005 · Mayús ±0.05 · AvPág/RePág ±0.1 · Inicio/Fin · Enter fija el valor calibrado',
-      en: 'Arrow keys ±0.005 · Shift ±0.05 · PageUp/Down ±0.1 · Home/End · Enter snaps to calibrated'
+      es: 'flechas ±0.005 · mayús ±0.05 · av/re pág ±0.1 · inicio/fin · enter → 0.4444',
+      en: 'arrows ±0.005 · shift ±0.05 · pgup/pgdn ±0.1 · home/end · enter → 0.4444'
     },
     'thr.sliderAria': { es: 'Umbral de detección de anomalías', en: 'Anomaly detection threshold' },
 
@@ -284,12 +247,9 @@
     'queue.eyebrow': { es: '4 · Clasificación · XGBoost', en: '4 · Classification · XGBoost' },
     'queue.title':   { es: 'Cola de triaje de incidentes', en: 'Incident triage queue' },
     'queue.note': {
-      es: 'Solo las ventanas marcadas llegan al clasificador. XGBoost les pone nombre y, como su ' +
-          'espacio de labels es cerrado, va a poner alguno incluso cuando no debería. El label ' +
-          'real aparece acá, después del veredicto, nunca antes.',
-      en: 'Only flagged windows reach the classifier. XGBoost then names the attack — and ' +
-          'because its label space is closed, it will name something even when it should not. ' +
-          'Ground truth appears here, after the verdict, never before it.'
+      es: 'El espacio de labels de XGBoost está cerrado, así que va a nombrar algo incluso ' +
+          'cuando no debería.',
+      en: 'XGBoost’s label space is closed, so it will name something even when it should not.'
     },
     'queue.aria':   { es: 'Cola de triaje de incidentes', en: 'Incident triage queue' },
     'queue.err':    { es: 'err', en: 'err' },
@@ -374,97 +334,74 @@
     // ---- failure panel
     'fail.eyebrow': { es: '5 · Lo que el sistema hace mal', en: '5 · What this system gets wrong' },
     'fail.title':   { es: 'Las fallas, a tamaño real', en: 'The failures, at full size' },
-    'fail.note': {
-      es: 'Los dos números de abajo se mueven con el umbral que fijes. Son las dos mitades del ' +
-          'mismo compromiso: bajá la línea y vas a capturar más ataques, pero vas a ahogar al ' +
-          'analista en falsas alarmas; subila y la cola queda limpia, pero se van a colar ataques.',
-      en: 'Both numbers below move with the threshold you set. They are the two halves of the ' +
-          'same tradeoff: push the line down and you catch more attacks but drown the analyst ' +
-          'in false alarms; push it up and the queue gets clean but attacks walk past.'
-    },
+    /* No note: the two numbers below move in opposite directions as the
+       threshold moves, which is the whole of what the deleted paragraph said. */
     'fail.missedHead': { es: 'Ataques no detectados', en: 'Missed attacks' },
     'fail.fpHead':     { es: 'Falsos positivos', en: 'False positives' },
     'fail.missedBody': {
       es: function (t, r) {
-        return 'ventanas de ataque de este segmento quedan <b>por debajo</b> de tu umbral de ' +
-               t + ' y nunca se clasifican. Recall ' + r + '. Aparecen en el gráfico ' +
-               'como círculos punteados huecos, visibles justamente porque nunca llegan a la cola.';
+        return 'ventanas de ataque quedan <b>por debajo</b> de ' + t +
+               ' y nunca se clasifican. Recall ' + r + '.';
       },
       en: function (t, r) {
-        return 'attack windows in this slice fall <b>below</b> your threshold of ' + t +
-               ' and are never classified. Recall ' + r + '. They appear on the chart as hollow ' +
-               'dashed circles — visible precisely because they never reach the queue.';
+        return 'attack windows fall <b>below</b> ' + t + ' and are never classified. Recall ' +
+               r + '.';
       }
     },
     'fail.fpBody': {
       es: function (p, pct) {
-        return 'alertas son tráfico benigno. Precision ' + p + ' — un analista trabajando esta ' +
-               'cola descartaría el ' + pct + '% de ella.';
+        return 'alertas son tráfico benigno. Precision ' + p + ' — un analista descartaría el ' +
+               pct + '% de esta cola.';
       },
       en: function (p, pct) {
-        return 'alerts are benign traffic. Precision ' + p + ' — an analyst working this queue ' +
-               'would discard ' + pct + '% of it.';
+        return 'alerts are benign traffic. Precision ' + p + ' — an analyst would discard ' +
+               pct + '% of this queue.';
       }
     },
+    /* The Limitation, in its own voice. zmorgado/portfolio ADR-0006 records
+       that dropping the per-project pages cost that site the ability to make
+       this argument properly — it survives there as one line on a grid cell.
+       This page is now the only place it gets made in full, so it stays even
+       as the prose around it is cut. */
     'fail.hulkNote': {
-      es: '<b>La debilidad estructural que este segmento no te puede mostrar.</b> Esta ventana ' +
-          'de reproducción contiene DoS slowloris y DoS Slowhttptest, pero <b>ningún DoS ' +
-          'Hulk</b>, y DoS Hulk es justo donde falla el pipeline. Sobre el conjunto completo de ' +
-          'evaluación su recall es <b>0.424</b>: DoS Hulk genera pedidos HTTP sintácticamente ' +
-          'válidos cuyas características de flujo se superponen con el tráfico benigno, así que ' +
-          'el autoencoder los reconstruye bien, el error queda por debajo del umbral y unos ' +
-          '8.600 de 14.887 flujos de ataque nunca llegan al clasificador. Ningún umbral que ' +
-          'fijes en esta página lo va a sacar a la luz, porque esos flujos no están en este ' +
-          'segmento. Es lo más grave que tiene el sistema.',
-      en: '<b>The structural weakness this slice cannot show you.</b> This replay window contains ' +
-          'DoS slowloris and DoS Slowhttptest, but <b>no DoS Hulk</b> — and DoS Hulk is exactly ' +
-          'where the pipeline fails. Across the full evaluation set its recall is <b>0.424</b>: ' +
-          'DoS Hulk generates syntactically valid HTTP requests whose flow features overlap with ' +
-          'benign traffic, so the autoencoder reconstructs them well, the error stays below ' +
-          'threshold, and roughly 8,600 of 14,887 attack flows never reach the classifier at ' +
-          'all. No threshold you can set on this page will surface that, because those flows are ' +
-          'not in this slice. It is the single biggest thing wrong with the system.'
+      es: '<b>DoS Hulk: recall 0.424.</b> Genera pedidos HTTP sintácticamente válidos cuyas ' +
+          'características de flujo se superponen con el tráfico benigno, así que el ' +
+          'autoencoder los reconstruye bien y su error queda por debajo del umbral: unos 8.600 ' +
+          'de 14.887 flujos de ataque nunca llegan al clasificador. Es lo más grave que tiene ' +
+          'el sistema, y ningún umbral que fijes acá lo va a mostrar, porque este segmento no ' +
+          'contiene DoS Hulk.',
+      en: '<b>DoS Hulk: recall 0.424.</b> It generates syntactically valid HTTP requests whose ' +
+          'flow features overlap with benign traffic, so the autoencoder reconstructs them well ' +
+          'and their error stays below the threshold: roughly 8,600 of 14,887 attack flows ' +
+          'never reach the classifier. It is the worst thing wrong with the system, and no ' +
+          'threshold you set here will show it, because this slice contains no DoS Hulk.'
     },
     'fail.unknownNote': {
-      es: '<b>Ataques desconocidos.</b> El clasificador conoce cuatro labels: BENIGN, DoS Hulk, ' +
-          'DoS Slowhttptest y DoS slowloris. Ante un flujo de GoldenEye o Heartbleed no puede ' +
-          'responder «no sé» —un softmax sobre un conjunto cerrado de labels no tiene esa ' +
-          'salida—, así que devuelve un nombre incorrecto con seguridad. Este segmento no ' +
-          'contiene tráfico de ese tipo (<span class="mono">unknown = false</span> en todo el ' +
-          'feed), así que el tratamiento de tarjeta correspondiente está implementado pero nunca ' +
-          'se activa acá. Eso es una propiedad de la muestra, no una prueba de que el problema ' +
-          'esté resuelto.',
-      en: '<b>Unknown attacks.</b> The classifier knows four labels: BENIGN, DoS Hulk, DoS ' +
-          'Slowhttptest, DoS slowloris. Faced with a GoldenEye or Heartbleed flow it cannot ' +
-          'answer "I don\'t know" — a softmax over a closed label set has no such output — so it ' +
-          'returns a confident wrong name. This slice contains no such traffic ' +
-          '(<span class="mono">unknown = false</span> throughout), so the card treatment is ' +
-          'specified and implemented but never triggers here. That is a property of the sample, ' +
-          'not evidence the problem is solved.'
+      es: '<b>Ataques desconocidos.</b> Ante un flujo de GoldenEye o Heartbleed el clasificador ' +
+          'no puede responder «no sé» —un softmax sobre cuatro labels no tiene esa salida—, ' +
+          'así que devuelve un nombre incorrecto con seguridad. Este segmento no contiene ' +
+          'tráfico así, que es una propiedad de la muestra y no una solución.',
+      en: '<b>Unknown attacks.</b> Faced with a GoldenEye or Heartbleed flow the classifier ' +
+          'cannot answer "I don\'t know" — a softmax over four labels has no such output — so ' +
+          'it returns a confident wrong name. This slice contains no such traffic, which is a ' +
+          'property of the sample and not a solution.'
     },
     'fail.disagreeNote': {
       es: function (d, a, wrong) {
-        return '<b>Las dos etapas no coinciden más seguido de lo que cualquiera de ellas se ' +
-               'equivoca.</b> Con tu umbral actual, <b>' + d + '</b> de ' + a + ' alertas son ' +
-               'ventanas que el autoencoder marcó y que XGBoost después etiquetó como BENIGN. ' +
-               'El pipeline no tiene árbitro para eso: la alerta le llega igual al analista, ' +
-               'solo que sin nombre de ataque. ' +
+        return '<b>' + d + '</b> de ' + a + ' alertas son ventanas que el autoencoder marcó y ' +
+               'XGBoost etiquetó como BENIGN. El pipeline no tiene árbitro: la alerta llega al ' +
+               'analista sin nombre de ataque. ' +
                (wrong
-                 ? 'En ' + wrong + ' de ellas el que se equivocaba era el clasificador: un ' +
-                   'ataque real que el detector capturó y el clasificador dejó pasar.'
-                 : 'En este segmento el clasificador acierta siempre que no coincide, que es el ' +
-                   'caso benigno funcionando como corresponde.');
+                 ? 'En ' + wrong + ' de ellas el que se equivocaba era el clasificador.'
+                 : 'Acá el clasificador acierta siempre que no coincide.');
       },
       en: function (d, a, wrong) {
-        return '<b>The two stages disagree more often than either is wrong.</b> At your current ' +
-               'threshold, <b>' + d + '</b> of ' + a + ' alerts are windows the autoencoder ' +
-               'flagged and XGBoost then labelled BENIGN. The pipeline has no arbiter for that: ' +
-               'the alert still reaches the analyst, just without an attack name. ' +
+        return '<b>' + d + '</b> of ' + a + ' alerts are windows the autoencoder flagged and ' +
+               'XGBoost labelled BENIGN. The pipeline has no arbiter: the alert reaches the ' +
+               'analyst with no attack name. ' +
                (wrong
-                 ? 'In ' + wrong + ' of them the classifier was the one that was wrong — a real ' +
-                   'attack the detector caught and the classifier waved through.'
-                 : 'On this slice the classifier is right every time it disagrees, which is the ' +
-                   'benign case working as intended.');
+                 ? 'In ' + wrong + ' of them the classifier was the one that was wrong.'
+                 : 'On this slice the classifier is right every time it disagrees.');
       }
     },
     'fail.tableCaption': {
@@ -484,32 +421,30 @@
     'cmp.pipeline':  { es: 'Pipeline completo', en: 'Full pipeline' },
     'cmp.pipeNote':  { es: '— el número honesto', en: '— the honest number' },
     'cmp.accuracy':  { es: 'de accuracy', en: 'accuracy' },
+    /* The one sentence the table will not say for itself. */
     'fail.closing': {
-      es: 'El clasificador es casi perfecto y el detector es el cuello de botella. Encadenarlos ' +
-          'implica que el pipeline hereda las fallas del detector, y 0.805 es lo que eso cuesta. ' +
-          'Dar solo el 0.996 sería el número más favorable y el menos cierto.',
-      en: 'The classifier is near-perfect and the detector is the bottleneck. Chaining them means ' +
-          'the pipeline inherits the detector\'s misses, and 0.805 is what that costs. Reporting ' +
-          'the 0.996 alone would be the more flattering number and the less true one.'
+      es: 'El pipeline completo obtiene <b>0.805</b> donde XGBoost por separado obtiene ' +
+          '<b>0.996</b>: esos diecinueve puntos son lo que cuesta encadenarlo a un detector que ' +
+          'se pierde ataques, y dar solo el 0.996 sería el número más favorable y el menos cierto.',
+      en: 'The full pipeline scores <b>0.805</b> where XGBoost alone scores <b>0.996</b> — those ' +
+          'nineteen points are what chaining it to a detector that misses attacks costs, and ' +
+          'reporting the 0.996 alone would be the more flattering number and the less true one.'
     },
 
     'tradeoff': {
       es: function (bf1, bt, gap, cal) {
-        return '<b>El umbral que se usa es defendible, no óptimo.</b> Se fijó en el percentil 95 ' +
-               'del error de validación benigno (0.4444), antes de mirar este segmento. Al ' +
-               'barrerlo acá, F1 alcanza su máximo en <b>' + bf1 + '</b> alrededor de <b>' + bt +
-               '</b>, ' + gap + ' por encima del ' + cal + ' que obtiene el valor calibrado. ' +
-               'Ajustar el umbral sobre los mismos datos con los que te evalúan es la forma de ' +
-               'conseguir un número que no sobrevive al deploy, así que se dejó donde lo ' +
-               'puso la calibración.';
+        return '<b>El umbral es defendible, no óptimo.</b> Se fijó en el percentil 95 del error ' +
+               'de validación benigno antes de mirar este segmento; acá F1 alcanza <b>' + bf1 +
+               '</b> en <b>' + bt + '</b>, ' + gap + ' por encima del ' + cal + ' del calibrado. ' +
+               'Ajustarlo sobre los datos con los que te evalúan es cómo se consigue un número ' +
+               'que no sobrevive al deploy.';
       },
       en: function (bf1, bt, gap, cal) {
         return '<b>The shipped threshold is defensible, not optimal.</b> It was set at the 95th ' +
-               'percentile of benign validation error (0.4444), before anyone looked at this ' +
-               'slice. Sweeping it here, F1 peaks at <b>' + bf1 + '</b> around <b>' + bt +
-               '</b> — ' + gap + ' above the ' + cal + ' the calibrated value scores. Tuning the ' +
-               'threshold on the data you are being judged on is how you get a number that does ' +
-               'not survive deployment, so it was left where the calibration put it.';
+               'percentile of benign validation error before anyone looked at this slice; here ' +
+               'F1 peaks at <b>' + bf1 + '</b> around <b>' + bt + '</b>, ' + gap + ' above the ' +
+               cal + ' the calibrated value scores. Tuning it on the data you are judged on is ' +
+               'how you get a number that does not survive deployment.';
       }
     },
 
@@ -601,15 +536,98 @@
     return fn.apply(null, Array.prototype.slice.call(arguments, 1));
   }
 
-  function storedLang() {
+  // ------------------------------------------------- theme + language storage
+
+  /* Both preferences live in a cookie scoped to the parent domain as well as in
+     localStorage. localStorage is per-origin, so a visitor who chose dark and
+     English on santiagomorgado.dev would otherwise arrive at this subdomain and
+     get system defaults again — a visible seam in what is meant to read as one
+     site. The cookie is what carries the choice across; index.html reads it
+     before first paint so the page never flashes the wrong theme.
+
+     The portfolio writes the same two cookies, under the same names. Anywhere
+     that is not santiagomorgado.dev — a preview URL, localhost, file:// — the
+     cookie is set without a domain and is simply host-only.
+
+     Two limits worth knowing. Safari's ITP caps the lifetime of a cookie set
+     from script at seven days regardless of the max-age below, so for a Safari
+     visitor the two origins fall back to their own localStorage after a week;
+     lifting that needs a Set-Cookie header, which static hosting does not give
+     us. And when the cookie is gone but localStorage is not, the last choice
+     made on THIS origin wins — deliberately, because forgetting it would be
+     worse than the rare case where the other origin has since moved on. */
+  var PREF_DOMAIN = '.santiagomorgado.dev';
+
+  function readPref(name) {
     try {
-      var v = localStorage.getItem('lad-lang');
-      return (v === 'es' || v === 'en') ? v : null;
-    } catch (e) { return null; }   // privacy modes throw on access
+      var m = document.cookie.match('(?:^|; *)' + name + '=([^;]*)');
+      if (m) return decodeURIComponent(m[1]);
+    } catch (e) { /* cookies disabled; fall through to localStorage */ }
+    try { return localStorage.getItem(name); } catch (e) { return null; }
   }
 
-  function storeLang(v) {
-    try { localStorage.setItem('lad-lang', v); } catch (e) { /* non-fatal */ }
+  function savePref(name, value) {
+    try { localStorage.setItem(name, value); } catch (e) { /* non-fatal */ }
+    try {
+      var host = location.hostname || '';
+      var shared = host === PREF_DOMAIN.slice(1) ||
+                   host.slice(-PREF_DOMAIN.length) === PREF_DOMAIN;
+      document.cookie = name + '=' + encodeURIComponent(value) +
+        '; path=/; max-age=31536000; samesite=lax' +
+        (shared ? '; domain=' + PREF_DOMAIN : '') +
+        (location.protocol === 'https:' ? '; secure' : '');
+    } catch (e) { /* file://, or cookies disabled */ }
+  }
+
+  function storedLang() {
+    var v = readPref('lang');
+    // What this page wrote before the two sites shared a cookie.
+    if (v !== 'es' && v !== 'en') {
+      try { v = localStorage.getItem('lad-lang'); } catch (e) { v = null; }
+    }
+    return (v === 'es' || v === 'en') ? v : null;
+  }
+
+  function storeLang(v) { savePref('lang', v); }
+
+  /* What the document is showing right now. Before a choice has been made that
+     is whatever the system preference resolves to — reading the attribute
+     alone would make the first click a no-op on a system-dark page. */
+  function currentTheme() {
+    var stamped = document.documentElement.getAttribute('data-theme');
+    if (stamped === 'light' || stamped === 'dark') return stamped;
+    return window.matchMedia &&
+           window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function syncThemeButton() {
+    var dark = currentTheme() === 'dark';
+    var btn = $('btn-theme');
+    if (btn) btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    var label = $('btn-theme-label');
+    if (label) label.textContent = t(dark ? 'ctrl.light' : 'ctrl.dark');
+    syncThemeColor(dark);
+  }
+
+  /* The browser paints its own chrome from <meta name="theme-color">, and the
+     two in the head answer the system preference only. Once a visitor has
+     chosen — and the choice persists — a system-light phone would otherwise
+     show a dark page under a light bar. Narrowing the media queries to the
+     chosen theme is what keeps the bar above the viewport in step with the
+     ground below it. */
+  function syncThemeColor(dark) {
+    var light = $('theme-color-light');
+    var night = $('theme-color-dark');
+    if (!light || !night) return;
+    var chosen = document.documentElement.getAttribute('data-theme');
+    if (chosen !== 'light' && chosen !== 'dark') {
+      // No choice made: hand both back to the system preference.
+      light.setAttribute('media', '(prefers-color-scheme: light)');
+      night.setAttribute('media', '(prefers-color-scheme: dark)');
+      return;
+    }
+    light.setAttribute('media', dark ? 'not all' : 'all');
+    night.setAttribute('media', dark ? 'all' : 'not all');
   }
 
   /* Numbers follow the locale: Spanish uses '.' as thousands separator. */
@@ -779,11 +797,17 @@
       class: 'axis-line', x1: CH.l, x2: CH.l + plotW, y1: d.h - CH.b, y2: d.h - CH.b
     }));
 
+    // On a narrow plot the full label runs past the right edge and is clipped
+    // by the page rather than wrapping, so the window range — which <desc>
+    // states in full for a screen reader either way — is dropped and the axis
+    // keeps its name.
     var at = svgEl('text', {
       class: 'axis-title', x: CH.l, y: d.h - 10
     });
-    at.textContent = t('chart.window') + ' ' + vis[0].w + ' → ' + vis[vis.length - 1].w +
-                     '   ·   ' + t('chart.axis');
+    at.textContent = d.w < 560
+      ? t('chart.axis')
+      : t('chart.window') + ' ' + vis[0].w + ' → ' + vis[vis.length - 1].w +
+        '   ·   ' + t('chart.axis');
     g.appendChild(at);
 
     // ---- area fills split at the threshold line
@@ -873,15 +897,20 @@
     g.appendChild(svgEl('line', {
       class: 'calib-line', x1: CH.l, x2: CH.l + plotW, y1: cy2, y2: cy2
     }));
-    // Anchored left and pushed clear of the threshold line: at rest the two
-    // lines sit on top of each other, so a shared label position is unreadable.
-    var calibBelow = Math.abs(cy2 - ty) < 14 || threshold > calibrated;
-    var cl = svgEl('text', {
-      class: 'calib-label', x: CH.l + 6,
-      y: calibBelow ? cy2 + 13 : cy2 - 6
-    });
-    cl.textContent = t('chart.calib');
-    g.appendChild(cl);
+    // Only while the threshold has been moved away. At rest the two lines sit
+    // on top of each other and the handle already prints "= calibrado", so this
+    // label is a second name for the same line — and it lands on the error
+    // trace, which reads as a struck-through word rather than as a label.
+    var snapped = Math.abs(threshold - calibrated) <= SNAP_EPS;
+    if (!snapped) {
+      var calibBelow = Math.abs(cy2 - ty) < 14 || threshold > calibrated;
+      var cl = svgEl('text', {
+        class: 'calib-label', x: CH.l + 6,
+        y: calibBelow ? cy2 + 13 : cy2 - 6
+      });
+      cl.textContent = t('chart.calib');
+      g.appendChild(cl);
+    }
 
     // ---- threshold group: hit area, line, handle
     var tg = svgEl('g', {
@@ -905,13 +934,14 @@
       class: 'threshold-hit', x1: CH.l, x2: CH.l + plotW + CH.r, y1: ty, y2: ty
     }));
 
-    var snapped = Math.abs(threshold - calibrated) <= SNAP_EPS;
     var hx = CH.l + plotW + 6;
+    // rx 2, like every other corner on the page: the drawings have no
+    // rounder one, so neither does the handle (ADR 0005).
     tg.appendChild(svgEl('rect', {
-      class: 'focus-ring', x: hx - 3, y: ty - 15, width: 62, height: 30, rx: 999
+      class: 'focus-ring', x: hx - 3, y: ty - 15, width: 62, height: 30, rx: 2
     }));
     tg.appendChild(svgEl('rect', {
-      class: 'threshold-handle', x: hx, y: ty - 12, width: 56, height: 24, rx: 999
+      class: 'threshold-handle', x: hx, y: ty - 12, width: 56, height: 24, rx: 2
     }));
     var ht = svgEl('text', {
       class: 'threshold-handle__text', x: hx + 28, y: ty + 4, 'text-anchor': 'middle'
@@ -1064,7 +1094,12 @@
     return 'ok';
   }
 
-  function buildCard(item) {
+  /* `explain` is false for every card after the first of its kind in the
+     queue. The note says why a kind of alert looks the way it does, which is
+     worth a paragraph once; eight identical copies of it say nothing new seven
+     times, and the queue is where that reads worst — a run of one kind fills
+     the section with the same four lines. */
+  function buildCard(item, explain) {
     var w = item.w;
     var kind = cardKind(w);
     var li = document.createElement('li');
@@ -1094,7 +1129,9 @@
     }
 
     var note = '';
-    if (kind === 'unknown') {
+    if (!explain) {
+      /* nothing: the first card of this kind already carries the note */
+    } else if (kind === 'unknown') {
       note = '<p class="card-note">' + t('card.noteUnknown') + '</p>';
     } else if (kind === 'misclass') {
       note = '<p class="card-note">' + t('card.noteMisclass') + '</p>';
@@ -1122,8 +1159,11 @@
   function renderQueue() {
     var frag = document.createDocumentFragment();
     var vis = queue.slice(0, QUEUE_CAP);
+    var explained = {};
     for (var i = 0; i < vis.length; i++) {
-      var card = buildCard(vis[i]);
+      var kind = cardKind(vis[i].w);
+      var card = buildCard(vis[i], !explained[kind]);
+      explained[kind] = true;
       card.style.opacity = DEPTH_OPACITY[i] === undefined ? 0.25 : DEPTH_OPACITY[i];
       vis[i].fresh = false;
       frag.appendChild(card);
@@ -1233,7 +1273,11 @@
      data-i18n (text), data-i18n-html (markup), or data-i18n-<attr> for
      attributes such as aria-label. Everything dynamic is re-rendered after. */
   function applyLang() {
+    // `lang` is what a screen reader and a translator read; `data-lang` is the
+    // hook the portfolio's stylesheet uses, kept in step so the two documents
+    // are stamped the same way.
     document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('data-lang', lang);
 
     var nodes = document.querySelectorAll('[data-i18n]');
     for (var i = 0; i < nodes.length; i++) {
@@ -1265,11 +1309,7 @@
 
     // Controls whose label depends on current state, not just language.
     if (el.btnPlayLabel) el.btnPlayLabel.textContent = t(playing ? 'ctrl.pause' : 'ctrl.play');
-    var themeLabel = $('btn-theme-label');
-    if (themeLabel) {
-      themeLabel.textContent =
-        t(document.documentElement.getAttribute('data-theme') === 'dark' ? 'ctrl.light' : 'ctrl.dark');
-    }
+    syncThemeButton();
     var sw = $('btn-lang');
     if (sw) {
       sw.textContent = t('lang.switchTo');
@@ -1510,13 +1550,27 @@
       el.live.textContent = t('live.snapped');
       lastAnnounce = Date.now();
     });
+    /* The chart is inline SVG and takes every stroke and fill from demo.css,
+       so a theme change reaches it the way it reaches the rest of the page —
+       there is nothing to redraw. Hardcoded hex in a canvas call would not
+       have that property; this is why the chart is not a canvas. */
     $('btn-theme').addEventListener('click', function () {
-      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-      document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
-      this.setAttribute('aria-pressed', dark ? 'false' : 'true');
-      $('btn-theme-label').textContent = t(dark ? 'ctrl.dark' : 'ctrl.light');
-      scheduleRender();
+      var next = currentTheme() === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      savePref('theme', next);
+      syncThemeButton();
     });
+
+    // Follow the system preference for as long as the visitor has not chosen:
+    // only the button's own label needs to catch up.
+    if (window.matchMedia) {
+      var scheme = window.matchMedia('(prefers-color-scheme: dark)');
+      var onScheme = function () {
+        if (!document.documentElement.getAttribute('data-theme')) syncThemeButton();
+      };
+      if (scheme.addEventListener) scheme.addEventListener('change', onScheme);
+      else if (scheme.addListener) scheme.addListener(onScheme);
+    }
 
     // Accepts a comma decimal separator too — the field is type=text so that
     // its value is always dot-formatted regardless of browser locale.

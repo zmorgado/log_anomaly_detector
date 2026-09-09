@@ -2,6 +2,22 @@
 
 Visual specification for the interactive browser demo of the **Log Anomaly Detector** (LSTM Autoencoder + XGBoost, CIC-IDS2017). Target context: embedded in a developer portfolio. Audience: technical recruiters, engineers, security people.
 
+> **§2 (colour) and §3.1/§3.3 (type) are superseded.** The demo now draws on the
+> same token layer as [`santiagomorgado.dev`](https://santiagomorgado.dev/) —
+> five inks, a serif for prose and a mono for figures — because a visitor
+> arriving from the portfolio grid should land on the same site rather than on
+> a second one. The palette and the reasoning behind it live in
+> `zmorgado/portfolio` `docs/adr/0005-visual-direction-derived-from-the-marks.md`,
+> which owns it for both repositories; the block at the top of `web/demo.css` is
+> a verbatim copy and the note above it says so.
+>
+> The rest of this document still governs the page: §4 spacing and layout, §5
+> component behaviour, §6 motion, §7 accessibility and §8 anti-patterns are
+> unchanged, and `web/demo.css` still cites them by section. What §2 established
+> and the new palette had to keep is §2.4: state is never encoded by hue alone.
+> Four inks now carry the four states, and every one of them still carries its
+> own glyph and its own mark shape.
+
 ---
 
 ## 0. Research provenance
@@ -74,6 +90,10 @@ Animate only what physically moves through the system: lines scrolling in, the w
 ---
 
 ## 2. Color system
+
+**Superseded — see the note at the top of this file.** What follows records why
+the original palette was built the way it was; §2.4 is the part that survived
+into the replacement.
 
 ### 2.1 Rationale and colorblind constraint
 
@@ -244,6 +264,13 @@ Verify by rendering the page through a grayscale filter (`filter: grayscale(1)`)
 ---
 
 ## 3. Typography
+
+**§3.1 and §3.3 are superseded — see the note at the top of this file.** Prose
+is Spectral and figures are IBM Plex Mono. The reason given below for wanting an
+unambiguous `0/O` and `1/l/I` in the log rows is why the replacement mono is a
+mono with the same property, and the fallback chain is kept for the same reason:
+if the webfont fails, the sliding-window alignment must not collapse. §3.2's
+scale is unchanged.
 
 ### 3.1 Stacks
 

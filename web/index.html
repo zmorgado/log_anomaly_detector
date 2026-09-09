@@ -5,8 +5,64 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Detector de anomalías</title>
 <meta name="description" content="Reproducción interactiva de un detector de intrusiones de dos etapas (autoencoder LSTM + XGBoost) sobre CIC-IDS2017. Arrastrá el umbral de anomalía y mirá cómo se recalculan precision, recall y la cola de alertas.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=&apos;http://www.w3.org/2000/svg&apos; viewBox=&apos;0 0 16 16&apos;%3E%3Crect width=&apos;16&apos; height=&apos;16&apos; rx=&apos;3&apos; fill=&apos;%230d0f15&apos;/%3E%3Cpath d=&apos;M2 11 L6 11 L8 5 L10 9 L14 9&apos; stroke=&apos;%23fcbb00&apos; stroke-width=&apos;1.6&apos; fill=&apos;none&apos;/%3E%3C/svg%3E">
+
+<!-- The two --ground values, as literals: a meta tag is read before any
+     stylesheet, so it cannot see the token layer. Keep them in step with
+     demo.css by hand, exactly as zmorgado/portfolio app/layout.tsx does. -->
+<meta name="theme-color" id="theme-color-light" media="(prefers-color-scheme: light)" content="#fcfcfb">
+<meta name="theme-color" id="theme-color-dark" media="(prefers-color-scheme: dark)" content="#121211">
+
+<!-- The same mark the portfolio uses, because it is this project's plate:
+     a threshold, a flow that crosses it and is caught, and one that sits just
+     under it and is not. -->
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-16x16.svg" sizes="16x16" type="image/svg+xml">
+
+<!-- Applies a saved theme and language before first paint. Inline and tiny for
+     that reason: it must run before the body renders. Without it a visitor who
+     arrived from the portfolio's dark page sees this one flash light while
+     demo.js loads, and that flash is conspicuous precisely because they came
+     from a dark page.
+
+     Preferences are read from a cookie first and localStorage second.
+     localStorage is per-origin, so a choice made on santiagomorgado.dev is
+     invisible to this subdomain; a cookie scoped to .santiagomorgado.dev is
+     what carries it across. The localStorage fallback is what a visitor who
+     lands here first, or who opens the page over file://, still gets. -->
+<script>
+(function () {
+  try {
+    var d = document.documentElement;
+    var cookie = function (name) {
+      var m = document.cookie.match('(?:^|; *)' + name + '=([^;]*)');
+      return m ? decodeURIComponent(m[1]) : null;
+    };
+    var stored = function (key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    };
+
+    var t = cookie('theme') || stored('theme');
+    if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+
+    // 'lad-lang' is what this page wrote before the two sites shared a cookie.
+    var l = cookie('lang') || stored('lang') || stored('lad-lang');
+    if (l === 'es' || l === 'en') {
+      d.setAttribute('lang', l);
+      d.setAttribute('data-lang', l);
+    }
+  } catch (e) { /* private browsing, or storage disabled */ }
+})();
+</script>
+
+<!-- The page's own stylesheet first: it must not queue behind a third-party
+     request. The two families are the portfolio's, and ADR-0003 keeps this
+     deployment free of a build step, so they come from Google Fonts rather
+     than being self-hosted and subset. display=swap and a real fallback stack
+     in demo.css are what that costs. -->
 <link rel="stylesheet" href="demo.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Spectral:wght@400;600&display=swap">
 </head>
 <body>
 
@@ -29,11 +85,11 @@
       <h1 class="page-title" data-i18n="intro.title">Detector de anomalías en tráfico de red</h1>
 
       <p class="page-lede" data-i18n-html="intro.p1">
-        Un sistema híbrido de dos etapas que detecta y clasifica amenazas de seguridad en
-        tráfico de red.
+        Un sistema híbrido de dos etapas: un <b>autoencoder LSTM no supervisado</b>, entrenado
+        solo con tráfico benigno, marca los flujos que no logra reconstruir; un
+        <b>clasificador XGBoost</b> le pone nombre a la amenaza en los que quedaron marcados.
       </p>
       <p class="intro-p" data-i18n-html="intro.p2"></p>
-      <p class="intro-p" data-i18n-html="intro.p3"></p>
 
       <p class="repo-link-wrap">
         <a class="repo-link" id="repo-link"
@@ -41,8 +97,8 @@
            target="_blank" rel="noopener noreferrer"
            data-i18n-aria-label="intro.repoAria">
           <span class="repo-link__glyph" aria-hidden="true">↗</span>
-          <span data-i18n="intro.repo">Código y documentación</span>
-          <span class="repo-link__url mono">github.com/zmorgado/log_anomaly_detector</span>
+          <span class="repo-link__text" data-i18n="intro.repo">Código y documentación</span>
+          <span class="repo-link__url">github.com/zmorgado/log_anomaly_detector</span>
         </a>
       </p>
     </div>
@@ -65,15 +121,12 @@
   <noscript>
     <div class="prose noscript-note">
       <strong>JavaScript está desactivado.</strong> La reproducción interactiva lo necesita.
-      Los resultados medidos no cambian y se indican acá: el pipeline completo obtiene
-      <b>0.805 de accuracy</b>, con un recall de <b>0.424</b> en DoS Hulk — el cuello
-      de botella es el detector, no el clasificador. XGBoost por separado alcanza 0.996 de
-      accuracy cuando tiene labels disponibles; el detector LSTM por separado, 0.696.
+      Los resultados medidos no cambian: el pipeline completo obtiene <b>0.805 de accuracy</b>
+      contra el 0.996 de XGBoost por separado, y el recall en DoS Hulk es de <b>0.424</b>.
       <br><br>
       <strong>JavaScript is disabled.</strong> The interactive replay needs it. The measured
-      results are unchanged: the full pipeline scores <b>0.805 accuracy</b>, with DoS Hulk
-      recall at <b>0.424</b> — the detector, not the classifier, is the bottleneck. XGBoost
-      alone reaches 0.996 accuracy when labels are available; the LSTM detector alone 0.696.
+      results are unchanged: the full pipeline scores <b>0.805 accuracy</b> against XGBoost's
+      0.996 on its own, and DoS Hulk recall is <b>0.424</b>.
     </div>
   </noscript>
 
@@ -84,9 +137,9 @@
       <div class="header-bar">
         <div>
           <p class="eyebrow" id="controls-h" data-i18n="ctrl.eyebrow">Reproducción</p>
-          <p class="section-note" id="controls-note" style="margin-top:4px"
+          <p class="threshold-hint" id="controls-note" style="margin-top:6px"
              data-i18n-html="ctrl.note">
-            El flujo avanza automáticamente un registro cada 420&nbsp;ms.
+            1 flujo / 420&nbsp;ms
           </p>
         </div>
         <div class="controls">
@@ -109,8 +162,8 @@
       <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" id="live-status"></p>
     </section>
 
-    <!-- ============ 1 + 2. Log stream with sliding-window bracket (one panel) ============ -->
-    <section aria-labelledby="stream-h">
+    <!-- ============ 1 + 2. Log stream with sliding-window bracket ============ -->
+    <section aria-labelledby="stream-h" class="sec-rule">
       <div class="section-head">
         <p class="eyebrow" id="stream-h" data-i18n="stream.eyebrow">1 · Flujo de red · CIC-IDS2017</p>
         <h2 class="section-title" data-i18n="stream.title">Los flujos llegan de 20 en 20</h2>
@@ -151,7 +204,6 @@
       <div class="section-head">
         <p class="eyebrow" id="chart-h" data-i18n="chart.eyebrow">2 · Detección · autoencoder LSTM</p>
         <h2 class="section-title" data-i18n="chart.title">Error de reconstrucción frente al umbral</h2>
-        <p class="section-note" data-i18n-html="chart.note"></p>
       </div>
 
       <div class="chart-panel">
@@ -166,20 +218,21 @@
         <div class="chart-legend" aria-hidden="true">
           <span data-i18n="legend.benign">· benigno (por debajo)</span>
           <span data-i18n="legend.anom">▲ marcado como anómalo</span>
-          <span data-i18n="legend.missed">✕ ataque no detectado (por debajo)</span>
-          <span data-i18n="legend.unknown">? clase desconocida</span>
+          <span data-i18n="legend.missed">○ ataque no detectado (por debajo)</span>
+          <span data-i18n="legend.unknown">◇ clase desconocida</span>
           <span data-i18n="legend.calib">— — calibrado 0.4444</span>
         </div>
 
         <div class="threshold-row">
           <label class="threshold-hint" for="threshold-num" data-i18n="thr.label">Umbral</label>
-          <input type="text" inputmode="decimal" class="threshold-num mono" id="threshold-num"
+          <input type="text" inputmode="decimal" class="threshold-num" id="threshold-num"
                  value="0.4444" autocomplete="off" spellcheck="false"
                  data-i18n-aria-label="thr.aria"
                  aria-label="Umbral de detección de anomalías, entrada numérica">
           <button type="button" class="btn" id="btn-calib" data-i18n="thr.reset">Volver al calibrado</button>
+          <!-- Not prose: a mono legend for the control it sits beside. -->
           <span class="threshold-hint" id="threshold-help" data-i18n="thr.help">
-            Flechas ±0.005 · Mayús ±0.05 · AvPág/RePág ±0.1 · Inicio/Fin · Enter fija el valor calibrado
+            flechas ±0.005 · mayús ±0.05 · av/re pág ±0.1 · inicio/fin · enter → 0.4444
           </span>
         </div>
 
@@ -253,17 +306,16 @@
     </section>
 
     <!-- ============ 6. Honest failure panel ============ -->
-    <section aria-labelledby="fail-h">
+    <section aria-labelledby="fail-h" class="sec-rule">
       <div class="section-head">
         <p class="eyebrow" id="fail-h" data-i18n="fail.eyebrow">5 · Lo que el sistema hace mal</p>
         <h2 class="section-title" data-i18n="fail.title">Las fallas, a tamaño real</h2>
-        <p class="section-note" data-i18n-html="fail.note"></p>
       </div>
 
       <div class="failure-panel">
         <div class="fail-grid">
           <div class="fail-card fail-card--missed">
-            <p class="fail-card__head"><span aria-hidden="true">✕</span>
+            <p class="fail-card__head"><span aria-hidden="true">○</span>
               <span data-i18n="fail.missedHead">Ataques no detectados</span></p>
             <p class="fail-card__num" id="fail-missed">—</p>
             <p class="fail-card__body" id="fail-missed-body">—</p>

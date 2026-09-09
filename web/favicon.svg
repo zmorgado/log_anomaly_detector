@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!--
+    The site's mark: the Detector's plate reduced to what survives at 16px —
+    a threshold, a flow that crosses it and is caught, and one that sits just
+    under it and is not. The same mechanism components/marks draws large.
+
+    The five inks are written as literals here, which is the one place that is
+    allowed: a favicon is fetched as its own document and never sees the token
+    layer in app/globals.css. They are the values in that file, and if the
+    palette moves these move with it by hand. Dark is switched inside the
+    drawing rather than by a second file, so there is one mark to keep true.
+
+    No gradient, no shadow, no radius past 2 — the drawings have none, so this
+    borrows none. See docs/adr/0005-visual-direction-derived-from-the-marks.md
+  -->
+  <style>
+    .ground { fill: #fcfcfb }
+    .rule   { stroke: #e2e0dc }
+    .ink    { stroke: #1c1b19 }
+    .pencil { stroke: #6e6c68 }
+    .pencil-fill { fill: #6e6c68 }
+    .signal { stroke: #0e6a86 }
+    .signal-fill { fill: #0e6a86 }
+    .alert  { stroke: #b23a28 }
+    .open   { fill: #fcfcfb }
+    @media (prefers-color-scheme: dark) {
+      .ground { fill: #121211 }
+      .rule   { stroke: #2b2a27 }
+      .ink    { stroke: #ecebe7 }
+      .pencil { stroke: #97948f }
+      .pencil-fill { fill: #97948f }
+      .signal { stroke: #5fb2ce }
+      .signal-fill { fill: #5fb2ce }
+      .alert  { stroke: #e0796a }
+      .open   { fill: #121211 }
+    }
+    line, path, circle { fill: none; stroke-linecap: round }
+  </style>
+
+  <rect class="ground" width="32" height="32" rx="2"/>
+
+  <!-- The plate it is drawn on. -->
+  <path class="rule" d="M6 25 H26" stroke-width="1"/>
+
+  <!-- The Threshold. Everything above it reaches the Classifier. -->
+  <line class="ink" x1="6" y1="12.5" x2="26" y2="12.5" stroke-width="1.2" stroke-dasharray="3 2.5"/>
+
+  <!-- Traffic nobody looks at twice. -->
+  <line class="pencil" x1="9.5" y1="25" x2="9.5" y2="20" stroke-width="1"/>
+  <circle class="pencil-fill" cx="9.5" cy="20" r="1.5" stroke="none"/>
+  <line class="pencil" x1="14" y1="25" x2="14" y2="21.5" stroke-width="1"/>
+  <circle class="pencil-fill" cx="14" cy="21.5" r="1.5" stroke="none"/>
+
+  <!-- The system acting: a flow over the line, flagged. -->
+  <line class="signal" x1="18.5" y1="25" x2="18.5" y2="7.6" stroke-width="1.2"/>
+  <circle class="signal-fill" cx="18.5" cy="7.6" r="1.9" stroke="none"/>
+
+  <!-- What the drawing exists to say: one that was there and was missed. -->
+  <line class="alert" x1="23" y1="25" x2="23" y2="15.2" stroke-width="1"/>
+  <circle class="alert open" cx="23" cy="15.2" r="1.9" stroke-width="1.2"/>
+</svg>
