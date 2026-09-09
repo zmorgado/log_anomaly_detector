@@ -93,17 +93,26 @@
 
   <header class="page-header">
 
-    <!-- Language switcher. Visually first, but it is NOT inside #demo, so the
-         Play/Pause control remains the first focusable element of the demo
-         region (WCAG 2.2.2). See the note in demo.js. Sits outside .prose so it
-         can align to the right edge of the demo column. -->
-    <div class="lang-bar">
-      <!-- The portfolio's control, to the letter: the button carries the code
-           of the language it switches TO, and nothing else. Deliberately no
-           lang attribute of its own — the one control that switches languages
-           has to survive both of them. -->
+    <!-- The portfolio's masthead pair, in its order: language, then theme.
+         Both name what they switch TO and nothing else.
+
+         Neither is inside #demo, so Play/Pause remains the first focusable
+         element of the demo region (WCAG 2.2.2), and tabbing to either of
+         these does not pause the stream — they are page controls, not demo
+         controls. Sits outside .prose so it can align to the right edge of the
+         demo column.
+
+         The language button deliberately carries no lang attribute of its own:
+         the one control that switches languages has to survive both of them. -->
+    <div class="page-controls">
       <button type="button" class="lang-toggle" id="btn-lang"
               data-i18n-aria-label="lang.switchTo">en</button>
+      <!-- aria-label is set by applyTheme(), which is the only thing that
+           knows which direction the button currently points. -->
+      <button type="button" class="theme-toggle" id="btn-theme" aria-pressed="false"
+              aria-label="Usar el tema oscuro">
+        <span id="btn-theme-label">oscuro</span>
+      </button>
     </div>
 
     <div class="prose">
@@ -177,10 +186,6 @@
           <button type="button" class="btn" id="btn-step">
             <span class="btn__glyph" aria-hidden="true">▸</span>
             <span data-i18n="ctrl.step">Avanzar una ventana</span>
-          </button>
-          <button type="button" class="btn" id="btn-theme" aria-pressed="false">
-            <span class="btn__glyph" aria-hidden="true">◐</span>
-            <span id="btn-theme-label">Oscuro</span>
           </button>
         </div>
       </div>
@@ -339,26 +344,33 @@
       </div>
 
       <div class="failure-panel">
+        <!-- Two columns, two failures, and each keeps the prose that explains
+             it. Left is what the detector never catches; right is what reaches
+             the analyst and should not, or arrives with no name on it. The
+             explanations used to run down the left under both cards, which read
+             as though they all belonged to the missed-attack half and left the
+             right column empty below two lines. -->
         <div class="fail-grid">
-          <div class="fail-card fail-card--missed">
-            <p class="fail-card__head"><span aria-hidden="true">○</span>
-              <span data-i18n="fail.missedHead">Ataques no detectados</span></p>
-            <p class="fail-card__num" id="fail-missed">—</p>
-            <p class="fail-card__body" id="fail-missed-body">—</p>
+          <div class="fail-col">
+            <div class="fail-card fail-card--missed">
+              <p class="fail-card__head"><span aria-hidden="true">○</span>
+                <span data-i18n="fail.missedHead">Ataques no detectados</span></p>
+              <p class="fail-card__num" id="fail-missed">—</p>
+              <p class="fail-card__body" id="fail-missed-body">—</p>
+            </div>
+            <p class="prose-note" data-i18n-html="fail.hulkNote"></p>
           </div>
-          <div class="fail-card fail-card--fp">
-            <p class="fail-card__head"><span aria-hidden="true">▲</span>
-              <span data-i18n="fail.fpHead">Falsos positivos</span></p>
-            <p class="fail-card__num" id="fail-fp">—</p>
-            <p class="fail-card__body" id="fail-fp-body">—</p>
+          <div class="fail-col">
+            <div class="fail-card fail-card--fp">
+              <p class="fail-card__head"><span aria-hidden="true">▲</span>
+                <span data-i18n="fail.fpHead">Falsos positivos</span></p>
+              <p class="fail-card__num" id="fail-fp">—</p>
+              <p class="fail-card__body" id="fail-fp-body">—</p>
+            </div>
+            <p class="prose-note" id="disagree-note"></p>
+            <p class="prose-note" data-i18n-html="fail.unknownNote"></p>
           </div>
         </div>
-
-        <p class="prose-note" data-i18n-html="fail.hulkNote"></p>
-
-        <p class="prose-note" id="disagree-note"></p>
-
-        <p class="prose-note" data-i18n-html="fail.unknownNote"></p>
 
         <div class="table-scroll">
           <table class="metrics-table">

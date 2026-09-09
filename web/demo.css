@@ -274,21 +274,22 @@ a:hover { border-bottom-color: var(--signal); }
   margin-bottom: var(--sp-6);
 }
 
-/* ---------- Language switcher + intro ---------- */
+/* ---------- Page controls + intro ---------- */
 
-.lang-bar {
-  display: flex; align-items: center; gap: var(--sp-3);
+.page-controls {
+  display: flex; align-items: center; gap: var(--sp-2);
   justify-content: flex-end;
-  /* Spans the demo column, not the narrower prose measure, so the switcher
-     lands on the same right edge as the figures below. */
+  /* Spans the demo column, not the narrower prose measure, so the pair lands
+     on the same right edge as the figures below. */
   max-width: var(--w-demo);
   margin-bottom: var(--sp-6);
 }
 
-/* Copied from zmorgado/portfolio app/page.module.css, where it styles the
-   masthead's language toggle. Same values, so the control a visitor pressed on
-   the way in is the same control they find here. */
-.lang-toggle {
+/* Copied from zmorgado/portfolio app/page.module.css, where these two style
+   the masthead's language and theme toggles. Same values, so the controls a
+   visitor pressed on the way in are the controls they find here. */
+.lang-toggle,
+.theme-toggle {
   position: relative;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -308,7 +309,8 @@ a:hover { border-bottom-color: var(--signal); }
    numbers are deliberate: a control drawn 44px tall would be the loudest thing
    in a header, and a target smaller than 44px is one a thumb misses. So the box
    a finger lands on is larger than the box the eye reads. */
-.lang-toggle::after {
+.lang-toggle::after,
+.theme-toggle::after {
   content: "";
   position: absolute;
   left: 0;
@@ -318,7 +320,8 @@ a:hover { border-bottom-color: var(--signal); }
   transform: translateY(-50%);
 }
 
-.lang-toggle:hover { color: var(--ink); border-color: var(--pencil); }
+.lang-toggle:hover,
+.theme-toggle:hover { color: var(--ink); border-color: var(--pencil); }
 
 .intro-p {
   font-size: var(--text-lg);
@@ -759,6 +762,12 @@ label.threshold-hint { text-transform: uppercase; letter-spacing: 0.06em; }
   border-top: 1px solid var(--rule);
 }
 @media (min-width: 768px) { .fail-grid { grid-template-columns: 1fr 1fr; gap: var(--sp-8); } }
+
+/* The column is the measure, so a note inside one is never wider than the card
+   it explains. Below the breakpoint the two columns stack and each failure
+   still arrives with its own prose attached. */
+.fail-col > .prose-note { max-width: none; }
+.fail-col > .prose-note:first-of-type { margin-top: var(--sp-5); }
 
 .fail-card__head {
   display: flex; align-items: baseline; gap: var(--sp-2);

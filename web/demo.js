@@ -180,8 +180,14 @@
     'ctrl.pause': { es: 'Pausar', en: 'Pause' },
     'ctrl.play':  { es: 'Reproducir', en: 'Play' },
     'ctrl.step':  { es: 'Avanzar una ventana', en: 'Step one window' },
-    'ctrl.dark':  { es: 'Oscuro', en: 'Dark' },
-    'ctrl.light': { es: 'Claro', en: 'Light' },
+    /* The theme toggle sits beside the language one and takes the same shape:
+       the name of what it switches TO, lowercase, no glyph. Translated, unlike
+       the portfolio's, because this page is properly bilingual and a Spanish
+       reader should not meet an English word in a control. */
+    'ctrl.dark':  { es: 'oscuro', en: 'dark' },
+    'ctrl.light': { es: 'claro', en: 'light' },
+    'theme.toDark':  { es: 'Usar el tema oscuro', en: 'Use the dark theme' },
+    'theme.toLight': { es: 'Usar el tema claro', en: 'Use the light theme' },
 
     // ---- stream section
     'stream.eyebrow': { es: '1 · Flujo de red · CIC-IDS2017', en: '1 · Network flow stream · CIC-IDS2017' },
@@ -649,10 +655,16 @@
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    var dark = theme === 'dark';
     var btn = $('btn-theme');
-    if (btn) btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+    if (btn) {
+      btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      // One lowercase word carries no verb, so the accessible name states the
+      // action — and names the theme being switched to, not the one on screen.
+      btn.setAttribute('aria-label', t(dark ? 'theme.toLight' : 'theme.toDark'));
+    }
     var label = $('btn-theme-label');
-    if (label) label.textContent = t(theme === 'dark' ? 'ctrl.light' : 'ctrl.dark');
+    if (label) label.textContent = t(dark ? 'ctrl.light' : 'ctrl.dark');
     syncThemeColor(theme);
   }
 
