@@ -12,8 +12,47 @@
 
 var test = require('node:test');
 var assert = require('node:assert');
+var fs = require('node:fs');
+var path = require('node:path');
 
 var demo = require('../demo.js');
+
+test('the demo includes an embedded feed before demo.js', function () {
+  var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  var js = fs.readFileSync(path.join(__dirname, '..', 'demo_feed.js'), 'utf8');
+  assert.ok(html.indexOf('demo_feed.js') < html.indexOf('<script src="demo.js">'));
+  assert.ok(js.startsWith('window.LAD_DEMO_FEED = '));
+});
+
+test('the masthead links back to the main portfolio', function () {
+  var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.ok(/<a class="back-link" href="https:\/\/santiagomorgado\.dev\/"/.test(html));
+  assert.ok(html.includes('aria-hidden="true">←</span>'));
+  assert.ok(html.includes('data-i18n="nav.back">'));
+});
+
+test('the demo shell follows the blog layout and removes decorative stream chrome', function () {
+  var css = fs.readFileSync(path.join(__dirname, '..', 'demo.css'), 'utf8');
+  var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.ok(css.includes('--w-page:  840px;'));
+  assert.ok(css.includes('--gutter:  36px;'));
+  assert.ok(css.includes('@media (max-width: 640px)'));
+  assert.ok(css.includes('--gutter: 20px'));
+  assert.ok(css.includes('column-gap: 32px'));
+  assert.ok(css.includes('row-gap: 60px'));
+  assert.ok(css.includes('linear-gradient'));
+  assert.ok(css.includes('window-bracket__tick'));
+  assert.ok(html.includes('window-bracket__tick'));
+  assert.ok(css.includes('width: min(1120px, calc(100vw - 40px));'));
+  assert.ok(css.includes('.stream-panel,\n.chart-panel'));
+  assert.ok(html.includes('class="sec-rule stream-section"'));
+  assert.ok(css.includes('.stream-section .section-head { margin-bottom: 60px; }'));
+  assert.ok(css.includes('.chart-legend {\n'));
+  assert.ok(css.includes('width: min(840px, 100%)'));
+  assert.ok(html.includes('id="chart-footline"'));
+  assert.ok(css.includes('.chart-footline'));
+  assert.ok(css.includes('max-width: 840px'));
+});
 
 // A stand-in for an element, matching only the selectors it is told to match.
 function node(matches) {

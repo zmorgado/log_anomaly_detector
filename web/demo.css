@@ -125,10 +125,10 @@
   --sp-12: 48px; --sp-16: 64px; --sp-20: 80px; --sp-24: 96px;
 
   /* ---- Widths ---- */
-  --w-prose: 64ch;
-  --w-demo:  1120px;
-  --w-page:  1280px;
-  --gutter:  16px;
+  --w-prose: 60ch;
+  --w-demo:  840px;
+  --w-page:  840px;
+  --gutter:  36px;
 
   --row-h: 16px;
 }
@@ -202,7 +202,7 @@ a:hover { border-bottom-color: var(--signal); }
 
 .demo { max-width: var(--w-demo); margin-inline: auto; }
 
-/* The demo column is the alignment reference: centre the shared 1120px block
+/* The demo column is the alignment reference: centre the blog-width 840px block
    and hang the prose off its left edge. */
 .wrap > .page-header,
 .wrap > .demo-intro,
@@ -213,9 +213,12 @@ a:hover { border-bottom-color: var(--signal); }
 
 .stack > * + * { margin-top: var(--sp-10); }
 
-@media (min-width: 768px) {
-  :root { --gutter: 32px; }
+@media (min-width: 641px) {
   .stack > * + * { margin-top: var(--sp-16); }
+}
+
+@media (max-width: 640px) {
+  :root { --gutter: 20px; }
 }
 
 /* Two boundaries inside the demo have no connector to separate them —
@@ -277,13 +280,32 @@ a:hover { border-bottom-color: var(--signal); }
 /* ---------- Page controls + intro ---------- */
 
 .page-controls {
-  display: flex; align-items: center; gap: var(--sp-2);
-  justify-content: flex-end;
+  display: flex; align-items: center; gap: var(--sp-3);
+  justify-content: space-between;
   /* Spans the demo column, not the narrower prose measure, so the pair lands
      on the same right edge as the figures below. */
   max-width: var(--w-demo);
   margin-bottom: var(--sp-6);
 }
+
+.page-controls__toggles {
+  display: flex; align-items: center; gap: var(--sp-2);
+}
+
+.back-link {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  min-height: 44px;
+  font: 500 var(--text-xs) var(--font-mono);
+  color: var(--pencil);
+  border-bottom: 0;
+}
+.back-link:hover { color: var(--ink); }
+.back-link__glyph {
+  font-size: var(--text-lg);
+  line-height: 1;
+  transition: transform var(--duration) var(--ease);
+}
+.back-link:hover .back-link__glyph { transform: translateX(-3px); }
 
 /* Copied from zmorgado/portfolio app/page.module.css, where these two style
    the masthead's language and theme toggles. Same values, so the controls a
@@ -430,6 +452,16 @@ a:hover { border-bottom-color: var(--signal); }
 
 /* ---------- 1+2. Stream + window bracket ---------- */
 
+.stream-section .section-head { margin-bottom: 60px; }
+
+.stream-panel,
+.chart-panel {
+  width: min(1120px, calc(100vw - 40px));
+  max-width: none;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
 .stream-cols {
   padding: 0 var(--sp-3) var(--sp-2);
   /* Same size and tracking as .log-row, or the header columns do not land over
@@ -526,6 +558,15 @@ a:hover { border-bottom-color: var(--signal); }
 }
 .chart-plot svg { display: block; width: 100%; height: auto; overflow: visible; }
 
+.chart-footline {
+  width: min(840px, 100%);
+  max-width: 840px;
+  margin: var(--sp-2) auto 0;
+  color: var(--pencil);
+  font: 400 11px/1.5 var(--font-mono);
+  letter-spacing: 0.01em;
+}
+
 /* A <line> has no interior to fill, but its computed fill still resolves to
    black; saying so explicitly keeps every paintable property on the chart
    accountable to a token. */
@@ -611,6 +652,8 @@ a:hover { border-bottom-color: var(--signal); }
   align-items: baseline;
   margin-top: var(--sp-4);
   padding-top: var(--sp-4);
+  width: min(840px, 100%);
+  margin-inline: auto;
   border-top: 1px solid var(--rule);
   font: 400 var(--text-sm) var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -624,6 +667,8 @@ a:hover { border-bottom-color: var(--signal); }
   display: flex; flex-wrap: wrap; gap: var(--sp-3);
   align-items: center;
   margin-top: var(--sp-4);
+  width: min(840px, 100%);
+  margin-inline: auto;
 }
 .threshold-num {
   min-height: 44px;
@@ -649,11 +694,19 @@ label.threshold-hint { text-transform: uppercase; letter-spacing: 0.06em; }
 
 .chart-legend {
   display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4);
+  width: min(840px, 100%);
+  margin-inline: auto;
   margin-top: var(--sp-3);
   font: 400 11px var(--font-mono);
   color: var(--pencil);
 }
 .chart-legend span { display: inline-flex; align-items: center; gap: var(--sp-1); }
+
+.chart-panel > .prose-note {
+  width: min(840px, 100%);
+  max-width: 840px;
+  margin-inline: auto;
+}
 .lg-glyph { font-size: 11px; }
 
 /* ---------- 4. Verdict ---------- */
@@ -748,8 +801,8 @@ label.threshold-hint { text-transform: uppercase; letter-spacing: 0.06em; }
   padding-top: var(--sp-3);
 }
 
-@media (min-width: 768px) and (max-width: 1119px) {
-  .queue { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--sp-8); }
+@media (min-width: 641px) {
+  .queue { display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; row-gap: 60px; }
 }
 
 /* ---------- 6. Failure panel ---------- */
@@ -761,7 +814,7 @@ label.threshold-hint { text-transform: uppercase; letter-spacing: 0.06em; }
   padding-top: var(--sp-5);
   border-top: 1px solid var(--rule);
 }
-@media (min-width: 768px) { .fail-grid { grid-template-columns: 1fr 1fr; gap: var(--sp-8); } }
+@media (min-width: 641px) { .fail-grid { grid-template-columns: 1fr 1fr; column-gap: 32px; row-gap: 60px; } }
 
 /* The column is the measure, so a note inside one is never wider than the card
    it explains. Below the breakpoint the two columns stack and each failure
@@ -894,9 +947,12 @@ details.a11y-table summary:hover { color: var(--ink); }
 
 /* ---------- Responsive: §4.4 ---------- */
 
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   /* Both stay in step, or the header columns stop landing over their data. */
   .log-row, .stream-cols { font-size: 11px; }
+  .lang-toggle,
+  .theme-toggle { min-height: 44px; }
+  .page-controls { flex-wrap: wrap; }
 }
 
 /* ---------- prefers-contrast ---------- */
