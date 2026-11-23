@@ -68,6 +68,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data-dir", type=Path, default=Path("dataset"))
     parser.add_argument("--artifacts-dir", type=Path, default=Path("artifacts"))
     parser.add_argument("--out", type=Path, default=Path("web/demo_feed.json"))
+    parser.add_argument("--js-out", type=Path, default=Path("web/demo_feed.js"))
     parser.add_argument("--start", type=int, default=DEMO_START)
     parser.add_argument("--windows", type=int, default=DEMO_WINDOWS)
     parser.add_argument("--playhead", type=int, default=DEFAULT_PLAYHEAD)
@@ -166,12 +167,20 @@ def main() -> None:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(feed, separators=(",", ":")))
+    args.js_out.parent.mkdir(parents=True, exist_ok=True)
+    args.js_out.write_text(
+        "window.LAD_DEMO_FEED = "
+        + json.dumps(feed, separators=(",", ":"), ensure_ascii=False)
+        + ";\n",
+        encoding="utf-8",
+    )
 
     flagged = errors > threshold
     print(f"rows {args.start}-{args.start + n_rows} -> {len(window_records)} windows")
     print(f"error range {errors.min():.4f} - {errors.max():.4f} (threshold {threshold:.4f})")
     print(f"flagged at calibrated threshold: {flagged.sum()} ({flagged.mean() * 100:.1f}%)")
     print(f"wrote {args.out} ({args.out.stat().st_size / 1024:.0f} KB)")
+    print(f"wrote {args.js_out} ({args.js_out.stat().st_size / 1024:.0f} KB)")
 
 
 if __name__ == "__main__":

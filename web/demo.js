@@ -99,28 +99,30 @@
       en: 'Network traffic anomaly detector'
     },
     'intro.p1': {
-      es: 'Un sistema híbrido de dos etapas: un <b>autoencoder LSTM no supervisado</b>, ' +
-          'entrenado solo con tráfico benigno, marca los flujos que no logra reconstruir; un ' +
-          '<b>clasificador XGBoost</b> le pone nombre a la amenaza en los que quedaron marcados.',
-      en: 'A hybrid two-stage system: an <b>unsupervised LSTM autoencoder</b>, trained only on ' +
-          'benign traffic, flags the flows it cannot reconstruct; an <b>XGBoost classifier</b> ' +
-          'names the threat for the ones that were flagged.'
+      es: 'Un equipo de seguridad recibe más alertas de las que alguien puede revisar. ' +
+          'Casi siempre hace falta una persona para decidir cuáles importan. En mi proyecto final ' +
+          'probé si un modelo podía hacer el primer filtro.',
+      en: 'A security team gets more alerts than one person can review. Most of the time, ' +
+          'someone still has to decide which ones matter. For my final project, I tested whether ' +
+          'a model could handle the first pass.'
     },
-    /* Why the project exists — the one thing here no chart or table on this
-       page shows. The paragraph that used to follow this one restated the
-       metrics table and the failure panel, so it is gone. */
     'intro.p2': {
-      es: 'Los equipos de un SOC reciben más alertas de las que pueden revisar. La idea es ' +
-          'automatizar el triaje de los ataques conocidos; al no ser supervisada, la primera ' +
-          'etapa además puede marcar ataques que nunca vio.',
-      en: 'SOC teams receive more alerts than they can review. The idea is to automate triage ' +
-          'for the known attacks; being unsupervised, the first stage can also flag attacks it ' +
-          'has never seen.'
+      es: 'Uno aprende el tráfico normal y marca lo extraño; otro le pone nombre al ataque. ' +
+          'Con dos de los tres ataques que probé funciona bien; con el tercero se escapa más de la mitad. ' +
+          'Movés el umbral y lo ves.',
+      en: 'One learns normal traffic and flags what is unusual; the other names the attack. ' +
+          'It works well on two of the three attacks I tested; on the third, it misses more than half. ' +
+          'Move the threshold and watch.'
     },
     'intro.repo': { es: 'Código y documentación', en: 'Code and documentation' },
     'intro.repoAria': {
       es: 'Repositorio del proyecto en GitHub (se abre en una solapa nueva)',
       en: 'Project repository on GitHub (opens in a new tab)'
+    },
+    'nav.back': { es: 'Volver al inicio', en: 'Back to main' },
+    'nav.backAria': {
+      es: 'Volver al sitio principal',
+      en: 'Back to the main site'
     },
 
     // ---- demo header (secondary)
@@ -128,7 +130,7 @@
     'demo.title':   { es: 'El umbral es todo el sistema', en: 'The threshold is the whole system' },
     /* One sentence of orientation. The drawings below say the rest. */
     'demo.lede': {
-      es: '<strong>Todo lo que sigue se recalcula en tu navegador a partir de un solo ' +
+      es: '<strong>Todo lo que sigue se recalcula en tu browser a partir de un solo ' +
           'número</strong>: arrastrá el umbral y mirá qué se mueve.',
       en: '<strong>Everything below is recomputed in your browser from a single ' +
           'number</strong> — drag the threshold and watch what moves.'
@@ -190,21 +192,19 @@
     'theme.toLight': { es: 'Usar el tema claro', en: 'Use the light theme' },
 
     // ---- stream section
-    'stream.eyebrow': { es: '1 · Flujo de red · CIC-IDS2017', en: '1 · Network flow stream · CIC-IDS2017' },
+    'stream.eyebrow': { es: 'Flujo de red', en: 'Network flow stream' },
     'stream.title':   { es: 'Los flujos llegan de 20 en 20', en: 'Raw flows arrive, 20 at a time' },
     'stream.note': {
-      es: 'Siete de las 36 características que lee el modelo; las filas <em>no</em> se colorean ' +
-          'por su label real, porque el detector todavía no lo conoce.',
-      en: 'Seven of the 36 features the model reads; rows are <em>not</em> coloured by their ' +
-          'true label, because the detector does not know it yet.'
+      es: 'Muestro siete de las 36 variables de cada flujo. Todas las filas se ven igual: todavía ninguna pasó por el detector.',
+      en: 'I show seven of the 36 variables recorded for each flow. Every row looks the same because none has gone through the detector yet.'
     },
     'stream.window': { es: 'ventana', en: 'window' },
     'stream.rows':   { es: 'filas', en: 'rows' },
     'stream.absRows':{ es: 'filas absolutas del CSV', en: 'absolute CSV rows' },
-    'stream.bracket':{ es: 'VENTANA t−19 → t · 20 × 36', en: 'WINDOW t−19 → t · 20 × 36' },
+    'stream.bracket':{ es: 'Ventana actual', en: 'Current window' },
 
     // ---- chart section
-    'chart.eyebrow': { es: '2 · Detección · autoencoder LSTM', en: '2 · Detection · LSTM autoencoder' },
+    'chart.eyebrow': { es: 'Detección', en: 'Detection' },
     'chart.title':   { es: 'Error de reconstrucción frente al umbral', en: 'Reconstruction error vs. threshold' },
     /* No note: the axis, the legend, the handle and the keyboard legend say
        everything the deleted paragraph said. */
@@ -244,7 +244,7 @@
     'm.alerts':    { es: 'alertas', en: 'alerts' },
 
     // ---- verdict
-    'verdict.eyebrow':   { es: '3 · Veredicto para la ventana actual', en: '3 · Verdict for the current window' },
+    'verdict.eyebrow':   { es: 'Veredicto de esta ventana', en: 'Verdict for this window' },
     'verdict.benign':    { es: 'BENIGNO', en: 'BENIGN' },
     'verdict.anomalous': { es: 'ANÓMALO', en: 'ANOMALOUS' },
     'verdict.error':     { es: 'error', en: 'error' },
@@ -254,12 +254,11 @@
     'verdict.notClassified': { es: ' · no clasificado', en: ' · not classified' },
 
     // ---- queue
-    'queue.eyebrow': { es: '4 · Clasificación · XGBoost', en: '4 · Classification · XGBoost' },
+    'queue.eyebrow': { es: 'Clasificación', en: 'Classification' },
     'queue.title':   { es: 'Cola de triaje de incidentes', en: 'Incident triage queue' },
     'queue.note': {
-      es: 'El espacio de labels de XGBoost está cerrado, así que va a nombrar algo incluso ' +
-          'cuando no debería.',
-      en: 'XGBoost’s label space is closed, so it will name something even when it should not.'
+      es: 'XGBoost elige un nombre entre los ataques conocidos, incluso cuando no debería.',
+      en: 'XGBoost picks a name from the known attacks, even when it should not.'
     },
     'queue.aria':   { es: 'Cola de triaje de incidentes', en: 'Incident triage queue' },
     'queue.err':    { es: 'err', en: 'err' },
@@ -342,7 +341,7 @@
     'a11y.benign':    { es: 'Benigno', en: 'Benign' },
 
     // ---- failure panel
-    'fail.eyebrow': { es: '5 · Lo que el sistema hace mal', en: '5 · What this system gets wrong' },
+    'fail.eyebrow': { es: 'Lo que el sistema hace mal', en: 'What this system gets wrong' },
     'fail.title':   { es: 'Las fallas, a tamaño real', en: 'The failures, at full size' },
     /* No note: the two numbers below move in opposite directions as the
        threshold moves, which is the whole of what the deleted paragraph said. */
@@ -374,17 +373,16 @@
        This page is now the only place it gets made in full, so it stays even
        as the prose around it is cut. */
     'fail.hulkNote': {
-      es: '<b>DoS Hulk: recall 0.424.</b> Genera pedidos HTTP sintácticamente válidos cuyas ' +
-          'características de flujo se superponen con el tráfico benigno, así que el ' +
-          'autoencoder los reconstruye bien y su error queda por debajo del umbral: unos 8.600 ' +
-          'de 14.887 flujos de ataque nunca llegan al clasificador. Es lo más grave que tiene ' +
-          'el sistema, y ningún umbral que fijes acá lo va a mostrar, porque este segmento no ' +
-          'contiene DoS Hulk.',
-      en: '<b>DoS Hulk: recall 0.424.</b> It generates syntactically valid HTTP requests whose ' +
-          'flow features overlap with benign traffic, so the autoencoder reconstructs them well ' +
-          'and their error stays below the threshold: roughly 8,600 of 14,887 attack flows ' +
-          'never reach the classifier. It is the worst thing wrong with the system, and no ' +
-          'threshold you set here will show it, because this slice contains no DoS Hulk.'
+      es: '<b>DoS Hulk: recall 0.424.</b> Genera pedidos HTTP válidos que se parecen al tráfico normal. ' +
+          'El autoencoder los reproduce bien y su error queda por debajo del umbral: 8.568 de 14.887 ' +
+          'flujos no llegan al clasificador.',
+      en: '<b>DoS Hulk: recall 0.424.</b> It generates valid HTTP requests that look like normal traffic. ' +
+          'The autoencoder reproduces them well and their error stays below the threshold: 8,568 of 14,887 ' +
+          'flows never reach the classifier.'
+    },
+    'fail.slowNote': {
+      es: '<b>Ataques lentos:</b> Slowhttptest pierde 562 flujos; slowloris pierde 600.',
+      en: '<b>Slow attacks:</b> Slowhttptest misses 562 flows; slowloris misses 600.'
     },
     'fail.unknownNote': {
       es: '<b>Ataques desconocidos.</b> Ante un flujo de GoldenEye o Heartbleed el clasificador ' +
@@ -433,12 +431,23 @@
     'cmp.accuracy':  { es: 'de accuracy', en: 'accuracy' },
     /* The one sentence the table will not say for itself. */
     'fail.closing': {
-      es: 'El pipeline completo obtiene <b>0.805</b> donde XGBoost por separado obtiene ' +
-          '<b>0.996</b>: esos diecinueve puntos son lo que cuesta encadenarlo a un detector que ' +
-          'se pierde ataques, y dar solo el 0.996 sería el número más favorable y el menos cierto.',
-      en: 'The full pipeline scores <b>0.805</b> where XGBoost alone scores <b>0.996</b> — those ' +
-          'nineteen points are what chaining it to a detector that misses attacks costs, and ' +
-          'reporting the 0.996 alone would be the more flattering number and the less true one.'
+      es: 'El pipeline completo obtiene <b>0.805</b> y XGBoost por separado <b>0.996</b>. ' +
+          'Me quedo con el primer número: incluye la falla del detector que viene antes.',
+      en: 'The full pipeline scores <b>0.805</b>; XGBoost alone scores <b>0.996</b>. ' +
+          'I keep the first number: it includes the earlier detector’s failure.'
+    },
+
+    'learned.eyebrow': { es: 'Aprendizaje', en: 'Lessons' },
+    'learned.title': { es: 'Lo que aprendí', en: 'What I learned' },
+    'learned.body': {
+      es: 'Mi primer intento dio un F1 por debajo de 0.05. Ajustar los modelos no cambiaba nada, ' +
+          'hasta que entendí que el problema eran los datos: eran sintéticos y las etiquetas no tenían ' +
+          'relación con las variables. Cambié a tráfico real (CIC-IDS2017), repensé la arquitectura, ' +
+          'y ahí empezó a funcionar.',
+      en: 'My first attempt produced an F1 below 0.05. Tuning the models changed nothing, until I ' +
+          'realized the problem was the data: it was synthetic and the labels had no relationship ' +
+          'with the variables. I switched to real traffic (CIC-IDS2017), reconsidered the architecture, ' +
+          'and that is when it started to work.'
     },
 
     'tradeoff': {
@@ -446,8 +455,7 @@
         return '<b>El umbral es defendible, no óptimo.</b> Se fijó en el percentil 95 del error ' +
                'de validación benigno antes de mirar este segmento; acá F1 alcanza <b>' + bf1 +
                '</b> en <b>' + bt + '</b>, ' + gap + ' por encima del ' + cal + ' del calibrado. ' +
-               'Ajustarlo sobre los datos con los que te evalúan es cómo se consigue un número ' +
-               'que no sobrevive al deploy.';
+               'Ajustarlo sobre los datos con los que te evalúan puede dar un número optimista.';
       },
       en: function (bf1, bt, gap, cal) {
         return '<b>The shipped threshold is defensible, not optimal.</b> It was set at the 95th ' +
@@ -518,10 +526,9 @@
     // ---- load failure
     'load.failStrong': { es: 'No se ha podido cargar el feed de la demo.', en: 'Could not load the demo feed.' },
     'load.failBody': {
-      es: 'Algunos navegadores bloquean <span class="mono">fetch()</span> de archivos locales ' +
-          'sobre <span class="mono">file://</span>. Serví este directorio por HTTP —por ejemplo ' +
-          '<span class="mono">python3 -m http.server</span> desde la raíz del repositorio— y ' +
-          'recargá. Los resultados medidos se indican completos más abajo.',
+      es: 'No se pudo cargar el feed incluido ni por HTTP. Abrí el directorio con un servidor local ' +
+          '—por ejemplo <span class="mono">python3 -m http.server</span> desde la raíz del ' +
+          'repositorio— y recargá. Los resultados medidos se indican completos más abajo.',
       en: 'Some browsers block <span class="mono">fetch()</span> of local files over ' +
           '<span class="mono">file://</span>. Serve this directory over HTTP instead — e.g. ' +
           '<span class="mono">python3 -m http.server</span> from the repository root — and ' +
@@ -850,18 +857,12 @@
       class: 'axis-line', x1: CH.l, x2: CH.l + plotW, y1: d.h - CH.b, y2: d.h - CH.b
     }));
 
-    // On a narrow plot the full label runs past the right edge and is clipped
-    // by the page rather than wrapping, so the window range — which <desc>
-    // states in full for a screen reader either way — is dropped and the axis
-    // keeps its name.
-    var at = svgEl('text', {
-      class: 'axis-title', x: CH.l, y: d.h - 10
-    });
-    at.textContent = d.w < 560
-      ? t('chart.axis')
-      : t('chart.window') + ' ' + vis[0].w + ' → ' + vis[vis.length - 1].w +
-        '   ·   ' + t('chart.axis');
-    g.appendChild(at);
+    // The window range and axis label are rendered in the matching-width footer
+    // below the SVG, so the SVG itself has no duplicate bottom footer.
+    if (el.chartFoot) {
+      el.chartFoot.textContent = t('chart.window') + ' ' + vis[0].w +
+        ' → ' + vis[vis.length - 1].w + '   ·   ' + t('chart.axis');
+    }
 
     // ---- area fills split at the threshold line
     var ty = yScale(threshold, d);
@@ -1600,6 +1601,7 @@
   function bind() {
     el.plot = $('chart-plot');
     el.chart = $('chart');
+    el.chartFoot = $('chart-footline');
     el.rail = $('stream-rail');
     el.bracket = $('window-bracket');
     el.streamCols = $('stream-cols');
@@ -1696,9 +1698,11 @@
     $('prov-windows').textContent = comma(windows.length);
     $('prov-shape').textContent = meta.window_size + ' × ' + meta.n_features;
     $('prov-note').textContent = lang === 'es' ? t('prov.noteEs') : meta.note;
-    $('bracket-label').textContent = (lang === 'es' ? 'VENTANA t−' : 'WINDOW t−') +
-                                     (meta.window_size - 1) + ' → t · ' +
-                                     meta.window_size + ' × ' + meta.n_features;
+    var bracketLabel = t('stream.bracket');
+    $('bracket-label').textContent = bracketLabel;
+    $('bracket-label').title = (lang === 'es' ? 'Ventana t−' : 'Window t−') +
+                               (meta.window_size - 1) + ' → t · ' +
+                               meta.window_size + ' × ' + meta.n_features;
   }
 
   function start(data) {
@@ -1779,6 +1783,14 @@
     if (langBtn) langBtn.addEventListener('click', function () {
       setLang(lang === 'es' ? 'en' : 'es', true);
     });
+
+    if (typeof window !== 'undefined' &&
+        window.LAD_DEMO_FEED &&
+        typeof window.LAD_DEMO_FEED === 'object') {
+      start(window.LAD_DEMO_FEED);
+      return;
+    }
+
     fetch(FEED_URL).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();

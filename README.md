@@ -53,7 +53,7 @@ Network flow (36 features)
 
 **Training**
 - LSTM Autoencoder: unsupervised on benign Monday traffic, MAE loss, Adam optimizer, batch size 256, early stopping. ~55k trainable parameters, converged in ~48 epochs.
-- Anomaly threshold set at the 95th percentile of the benign validation reconstruction error (final value: 0.4426).
+- Anomaly threshold set at the 95th percentile of the benign validation reconstruction error (final value: 0.4444).
 - XGBoost: supervised on 70% of Wednesday traffic, stratified split, balanced sample weights, 30 estimators, max depth 6, learning rate 0.1.
 
 ## Results
@@ -72,7 +72,7 @@ Network flow (36 features)
 
 - **Perfect recall on BENIGN (1.00):** legitimate traffic is never misclassified as an attack — no false alarms.
 - **Near-perfect precision on attack types:** when the system names a threat, it is almost always right.
-- **Low recall on DoS Hulk (0.42):** a limitation inherited from the detection stage — DoS Hulk generates seemingly valid HTTP requests whose features overlap with benign traffic, so its reconstruction error stays below the anomaly threshold and ~9,750 flows never reach XGBoost.
+- **Low recall on DoS Hulk (0.42):** a limitation inherited from the detection stage — DoS Hulk generates seemingly valid HTTP requests whose features overlap with benign traffic, so its reconstruction error stays below the anomaly threshold and 8,568 flows never reach XGBoost.
 
 ## Limitations & future work
 
@@ -119,7 +119,7 @@ The CSV files are stored with Git LFS; run `git lfs pull` after cloning to fetch
 
 Local development uses Python 3.12 (TensorFlow does not support 3.13+). Main libraries: TensorFlow 2.16.1 (Keras 3.15.1), XGBoost 2.0.3, scikit-learn 1.3.2, pandas 2.1.4, numpy 1.26.4, matplotlib 3.8.4, seaborn 0.13.2. Exact pins are in `requirements.txt`.
 
-The original models were trained on Google Colab (GPU T4); the pinned local environment reproduces them (anomaly threshold 0.4444 vs 0.4426 on Colab).
+The original models were trained on Google Colab (GPU T4); the pinned local environment reproduces the shipped artifact (anomaly threshold 0.4444).
 
 ## Reproducible training
 
