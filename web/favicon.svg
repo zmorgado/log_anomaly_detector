@@ -14,25 +14,25 @@
     borrows none. See docs/adr/0005-visual-direction-derived-from-the-marks.md
   -->
   <style>
-    .ground { fill: #fcfcfb }
-    .rule   { stroke: #e2e0dc }
-    .ink    { stroke: #1c1b19 }
-    .pencil { stroke: #6e6c68 }
-    .pencil-fill { fill: #6e6c68 }
-    .signal { stroke: #0e6a86 }
-    .signal-fill { fill: #0e6a86 }
-    .alert  { stroke: #b23a28 }
-    .open   { fill: #fcfcfb }
+    .ground { fill: #f3efe4 }
+    .rule   { stroke: #c8c0ae }
+    .ink    { stroke: #1c1917 }
+    .pencil { stroke: #57534e }
+    .pencil-fill { fill: #57534e }
+    .signal { stroke: #0d755c }
+    .signal-fill { fill: #0d755c }
+    .alert  { stroke: #c9331d }
+    .open   { fill: #f3efe4 }
     @media (prefers-color-scheme: dark) {
-      .ground { fill: #121211 }
-      .rule   { stroke: #2b2a27 }
-      .ink    { stroke: #ecebe7 }
-      .pencil { stroke: #97948f }
-      .pencil-fill { fill: #97948f }
-      .signal { stroke: #5fb2ce }
-      .signal-fill { fill: #5fb2ce }
-      .alert  { stroke: #e0796a }
-      .open   { fill: #121211 }
+      .ground { fill: #11100e }
+      .rule   { stroke: #353029 }
+      .ink    { stroke: #e7e0d2 }
+      .pencil { stroke: #9e9689 }
+      .pencil-fill { fill: #9e9689 }
+      .signal { stroke: #84ad95 }
+      .signal-fill { fill: #84ad95 }
+      .alert  { stroke: #f06a52 }
+      .open   { fill: #11100e }
     }
     line, path, circle { fill: none; stroke-linecap: round }
   </style>
