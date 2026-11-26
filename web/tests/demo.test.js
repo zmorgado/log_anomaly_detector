@@ -31,27 +31,21 @@ test('the masthead links back to the main portfolio', function () {
   assert.ok(html.includes('data-i18n="nav.back">'));
 });
 
-test('the demo shell follows the blog layout and removes decorative stream chrome', function () {
+test('the demo shell uses the B2 palette and puts the threshold chart ahead of the raw stream', function () {
   var css = fs.readFileSync(path.join(__dirname, '..', 'demo.css'), 'utf8');
   var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-  assert.ok(css.includes('--w-page:  840px;'));
-  assert.ok(css.includes('--gutter:  36px;'));
-  assert.ok(css.includes('@media (max-width: 640px)'));
-  assert.ok(css.includes('--gutter: 20px'));
-  assert.ok(css.includes('column-gap: 32px'));
-  assert.ok(css.includes('row-gap: 60px'));
-  assert.ok(css.includes('linear-gradient'));
+  assert.ok(css.includes('--ground: #f3efe4;'));
+  assert.ok(css.includes('--signal: #84ad95;'));
   assert.ok(css.includes('window-bracket__tick'));
   assert.ok(html.includes('window-bracket__tick'));
-  assert.ok(css.includes('width: min(1120px, calc(100vw - 40px));'));
-  assert.ok(css.includes('.stream-panel,\n.chart-panel'));
-  assert.ok(html.includes('class="sec-rule stream-section"'));
-  assert.ok(css.includes('.stream-section .section-head { margin-bottom: 60px; }'));
-  assert.ok(css.includes('.chart-legend {\n'));
-  assert.ok(css.includes('width: min(840px, 100%)'));
   assert.ok(html.includes('id="chart-footline"'));
   assert.ok(css.includes('.chart-footline'));
-  assert.ok(css.includes('max-width: 840px'));
+  assert.ok(html.includes('data-preset="0.4444"'));
+  assert.ok(html.includes('property="og:image"'));
+  assert.ok(
+    html.indexOf('id="chart"') < html.indexOf('id="stream-viewport"'),
+    'the draggable threshold chart must appear above the raw flow stream'
+  );
 });
 
 // A stand-in for an element, matching only the selectors it is told to match.
@@ -267,8 +261,11 @@ test('language is stamped from the cookie, then localStorage, else not at all', 
   var fromStorage = runHeadScript(null, false, false, { storedLang: 'en', all: true });
   assert.strictEqual(fromStorage.lang, 'en');
 
-  // Spanish is the original, so an unset language is left for the markup to
-  // declare rather than stamped over.
+  var spanishCookie = runHeadScript(null, false, false, { cookie: 'lang=es', all: true });
+  assert.strictEqual(spanishCookie.lang, 'es');
+  assert.strictEqual(spanishCookie['data-lang'], 'es');
+
+  // When nothing is stored, leave the markup default ('en') intact.
   var unset = runHeadScript(null, false, false, { all: true });
   assert.strictEqual(unset.lang, undefined);
   assert.strictEqual(unset['data-lang'], undefined);

@@ -15,19 +15,19 @@
     token layer. Keep the two drawings in step by hand.
   -->
   <style>
-    .ground { fill: #fcfcfb }
-    .ink    { stroke: #1c1b19 }
-    .signal { stroke: #0e6a86 }
-    .signal-fill { fill: #0e6a86 }
-    .alert  { stroke: #b23a28 }
-    .alert-fill { fill: #b23a28 }
+    .ground { fill: #f3efe4 }
+    .ink    { stroke: #1c1917 }
+    .signal { stroke: #0d755c }
+    .signal-fill { fill: #0d755c }
+    .alert  { stroke: #c9331d }
+    .alert-fill { fill: #c9331d }
     @media (prefers-color-scheme: dark) {
-      .ground { fill: #121211 }
-      .ink    { stroke: #ecebe7 }
-      .signal { stroke: #5fb2ce }
-      .signal-fill { fill: #5fb2ce }
-      .alert  { stroke: #e0796a }
-      .alert-fill { fill: #e0796a }
+      .ground { fill: #11100e }
+      .ink    { stroke: #e7e0d2 }
+      .signal { stroke: #84ad95 }
+      .signal-fill { fill: #84ad95 }
+      .alert  { stroke: #f06a52 }
+      .alert-fill { fill: #f06a52 }
     }
     line { fill: none }
   </style>

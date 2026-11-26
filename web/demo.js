@@ -77,63 +77,60 @@
      recall, accuracy, precision, deploy, labels, scaler, autoencoder. */
   var I18N = {
     'doc.title': {
-      es: 'Detector de anomalías en logs — demo interactiva',
-      en: 'Log Anomaly Detector — interactive demo'
+      es: 'El umbral es todo el sistema — Detector de intrusiones en red',
+      en: 'The threshold is the whole system — Network intrusion detector'
     },
     'doc.desc': {
-      es: 'Reproducción interactiva de un detector de intrusiones de dos etapas ' +
-          '(autoencoder LSTM + XGBoost) sobre CIC-IDS2017. Arrastrá el umbral de anomalía ' +
-          'y mirá cómo se recalculan precision, recall y la cola de alertas.',
-      en: 'Interactive replay of a two-stage LSTM autoencoder + XGBoost network intrusion ' +
-          'detector on CIC-IDS2017. Drag the anomaly threshold and watch precision, recall ' +
-          'and the alert queue recompute.'
+      es: '0.996 aislado contra 0.805 en el pipeline completo. Arrastrá el umbral de 0.4444 ' +
+          'y mirá dónde falla un detector de intrusiones de dos etapas — por Santiago Morgado.',
+      en: '0.996 in isolation vs. 0.805 end-to-end. Drag the 0.4444 threshold and inspect ' +
+          'where a two-stage intrusion detector breaks — by Santiago Morgado.'
     },
 
     // ---- project intro
     'intro.eyebrow': {
-      es: 'Proyecto final · Curso Intensivo en Inteligencia Artificial (CEI Sevilla)',
-      en: 'Final project · Curso Intensivo en Inteligencia Artificial (CEI Seville)'
+      es: 'replay interactivo · 2.000 ventanas',
+      en: 'interactive replay · 2,000 windows'
     },
     'intro.title': {
-      es: 'Detector de anomalías en tráfico de red',
-      en: 'Network traffic anomaly detector'
+      es: 'El umbral es todo el sistema',
+      en: 'The threshold is the whole system'
     },
     'intro.p1': {
-      es: 'Un equipo de seguridad recibe más alertas de las que alguien puede revisar. ' +
-          'Casi siempre hace falta una persona para decidir cuáles importan. En mi proyecto final ' +
-          'probé si un modelo podía hacer el primer filtro.',
-      en: 'A security team gets more alerts than one person can review. Most of the time, ' +
-          'someone still has to decide which ones matter. For my final project, I tested whether ' +
-          'a model could handle the first pass.'
+      es: 'Mi primer intento dio un F1 debajo de 0.05 sobre datos sintéticos; recién al pasar a ' +
+          'tráfico real (CIC-IDS2017) y separar detección (<b>autoencoder LSTM</b> no supervisado) ' +
+          'de clasificación (<b>XGBoost</b>) empezó a funcionar: <b>0.996</b> aislado contra ' +
+          '<b>0.805</b> de punta a punta.<br>Mové el umbral abajo y mirá qué pasa.',
+      en: 'My first attempt scored below 0.05 F1 on synthetic data. Switching to real CIC-IDS2017 ' +
+          'traffic and splitting unsupervised detection (<b>LSTM autoencoder</b>) from classification ' +
+          '(<b>XGBoost</b>) made it work: <b>0.996</b> isolated accuracy vs. <b>0.805</b> end-to-end.<br>' +
+          'Drag the threshold below to see what slips underneath.'
     },
-    'intro.p2': {
-      es: 'Uno aprende el tráfico normal y marca lo extraño; otro le pone nombre al ataque. ' +
-          'Con dos de los tres ataques que probé funciona bien; con el tercero se escapa más de la mitad. ' +
-          'Movés el umbral y lo ves.',
-      en: 'One learns normal traffic and flags what is unusual; the other names the attack. ' +
-          'It works well on two of the three attacks I tested; on the third, it misses more than half. ' +
-          'Move the threshold and watch.'
-    },
-    'intro.repo': { es: 'Código y documentación', en: 'Code and documentation' },
+    'intro.repo': { es: 'código y memoria', en: 'code & documentation' },
     'intro.repoAria': {
       es: 'Repositorio del proyecto en GitHub (se abre en una solapa nueva)',
       en: 'Project repository on GitHub (opens in a new tab)'
     },
-    'nav.back': { es: 'Volver al inicio', en: 'Back to main' },
+    'nav.back': { es: 'todos los proyectos', en: 'all projects' },
     'nav.backAria': {
-      es: 'Volver al sitio principal',
-      en: 'Back to the main site'
+      es: 'Volver al sitio principal de Santiago Morgado',
+      en: 'Back to Santiago Morgado portfolio'
     },
-
-    // ---- demo header (secondary)
-    'demo.eyebrow': { es: 'Demo interactiva', en: 'Interactive demo' },
-    'demo.title':   { es: 'El umbral es todo el sistema', en: 'The threshold is the whole system' },
-    /* One sentence of orientation. The drawings below say the rest. */
-    'demo.lede': {
-      es: '<strong>Todo lo que sigue se recalcula en tu browser a partir de un solo ' +
-          'número</strong>: arrastrá el umbral y mirá qué se mueve.',
-      en: '<strong>Everything below is recomputed in your browser from a single ' +
-          'number</strong> — drag the threshold and watch what moves.'
+    'nav.project': {
+      es: 'detector de intrusiones en red',
+      en: 'network intrusion detector'
+    },
+    'prov.summary': {
+      es: 'origen del dataset y tensor 20×36',
+      en: 'dataset provenance & 20×36 tensor slice'
+    },
+    'preset.calib': { es: '0.4444 calibrado', en: '0.4444 calibrated' },
+    'preset.hulk':  { es: '0.3100 atrapa Hulk', en: '0.3100 catch Hulk' },
+    'preset.clean': { es: '0.6000 cero ruido', en: '0.6000 zero noise' },
+    'exit.kicker':  { es: 'santiago morgado · santiagomorgado.dev', en: 'santiago morgado · santiagomorgado.dev' },
+    'exit.cta':     {
+      es: 'Mirá los otros 3 proyectos de Python, FastAPI e IA en santiagomorgado.dev →',
+      en: 'Inspect 3 more backend, FastAPI & applied AI systems on santiagomorgado.dev →'
     },
 
     /* ---- language switcher
@@ -192,7 +189,7 @@
     'theme.toLight': { es: 'Usar el tema claro', en: 'Use the light theme' },
 
     // ---- stream section
-    'stream.eyebrow': { es: 'Flujo de red', en: 'Network flow stream' },
+    'stream.eyebrow': { es: 'por debajo · ventana deslizante', en: 'under the hood · sliding window input' },
     'stream.title':   { es: 'Los flujos llegan de 20 en 20', en: 'Raw flows arrive, 20 at a time' },
     'stream.note': {
       es: 'Muestro siete de las 36 variables de cada flujo. Todas las filas se ven igual: todavía ninguna pasó por el detector.',
@@ -204,7 +201,7 @@
     'stream.bracket':{ es: 'Ventana actual', en: 'Current window' },
 
     // ---- chart section
-    'chart.eyebrow': { es: 'Detección', en: 'Detection' },
+    'chart.eyebrow': { es: 'etapa 1 · filtro autoencoder', en: 'stage 1 · autoencoder gate' },
     'chart.title':   { es: 'Error de reconstrucción frente al umbral', en: 'Reconstruction error vs. threshold' },
     /* No note: the axis, the legend, the handle and the keyboard legend say
        everything the deleted paragraph said. */
@@ -254,13 +251,13 @@
     'verdict.notClassified': { es: ' · no clasificado', en: ' · not classified' },
 
     // ---- queue
-    'queue.eyebrow': { es: 'Clasificación', en: 'Classification' },
-    'queue.title':   { es: 'Cola de triaje de incidentes', en: 'Incident triage queue' },
+    'queue.eyebrow': { es: 'etapa 2 · clasificador XGBoost', en: 'stage 2 · classifier output' },
+    'queue.title':   { es: 'Cola de alertas clasificadas', en: 'Classified alert queue' },
     'queue.note': {
       es: 'XGBoost elige un nombre entre los ataques conocidos, incluso cuando no debería.',
       en: 'XGBoost picks a name from the known attacks, even when it should not.'
     },
-    'queue.aria':   { es: 'Cola de triaje de incidentes', en: 'Incident triage queue' },
+    'queue.aria':   { es: 'Cola de alertas clasificadas', en: 'Classified alert queue' },
     'queue.err':    { es: 'err', en: 'err' },
     'queue.window': { es: 'ventana', en: 'window' },
     'queue.rows':   { es: 'filas', en: 'rows' },
@@ -536,7 +533,7 @@
     }
   };
 
-  var lang = 'es';
+  var lang = 'en';
 
   function t(key) {
     var entry = I18N[key];
@@ -763,14 +760,14 @@
 
   // ------------------------------------------------------------------ chart
 
-  var CH = { w: 1120, h: 320, l: 52, r: 74, t: 16, b: 34 };
+  var CH = { w: 1080, h: 250, l: 48, r: 72, t: 14, b: 26 };
 
   function chartDims() {
-    var wpx = el.plot.clientWidth || 1120;
-    var h = 320;
-    if (wpx < 480) h = 180;
-    else if (wpx < 768) h = 220;
-    else if (wpx < 1120) h = 280;
+    var wpx = el.plot.clientWidth || 1040;
+    var h = 250;
+    if (wpx < 480) h = 176;
+    else if (wpx < 768) h = 205;
+    else if (wpx < 1080) h = 232;
     return { w: wpx, h: h };
   }
 
@@ -1397,6 +1394,16 @@
 
   // ------------------------------------------------------------------ render
 
+  function renderPresets() {
+    var btns = document.querySelectorAll('[data-preset]');
+    for (var i = 0; i < btns.length; i++) {
+      var v = parseFloat(btns[i].getAttribute('data-preset'));
+      var active = !isNaN(v) && Math.abs(threshold - v) <= 0.004;
+      btns[i].setAttribute('aria-pressed', active ? 'true' : 'false');
+      btns[i].classList.toggle('is-active', active);
+    }
+  }
+
   function renderAll() {
     drawChart();
     renderVerdict();
@@ -1404,6 +1411,7 @@
     renderMetrics();
     renderFailures();
     renderA11yTable();
+    renderPresets();
     if (el.numInput !== document.activeElement) {
       el.numInput.value = threshold.toFixed(4);
     }
@@ -1641,6 +1649,21 @@
       el.live.textContent = t('live.snapped');
       lastAnnounce = Date.now();
     });
+
+    var presetBtns = document.querySelectorAll('[data-preset]');
+    for (var pb = 0; pb < presetBtns.length; pb++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          var pv = parseFloat(btn.getAttribute('data-preset'));
+          if (isNaN(pv)) return;
+          setThreshold(pv, { snap: Math.abs(pv - calibrated) <= SNAP_EPS });
+          if (Math.abs(pv - calibrated) <= SNAP_EPS && el.live) {
+            el.live.textContent = t('live.snapped');
+            lastAnnounce = Date.now();
+          }
+        });
+      })(presetBtns[pb]);
+    }
     /* The chart is inline SVG and takes every stroke and fill from demo.css,
        so a theme change reaches it the way it reaches the rest of the page —
        there is nothing to redraw. Hardcoded hex in a canvas call would not
@@ -1754,10 +1777,16 @@
 
   // file:// blocks fetch() of local JSON in Chrome. Try fetch, fall back to
   // XHR, which some browsers still allow for same-directory file reads.
+  function queryLang() {
+    try {
+      var q = new URLSearchParams(window.location.search).get('lang');
+      return isLang(q) ? q : null;
+    } catch (e) { return null; }
+  }
+
   function load() {
-    // Resolve language first: a feed that fails to load must still render the
-    // static page in the right language.
-    lang = storedLang() || 'es';
+    // Resolve language first: ?lang= override, then cookie/localStorage, else 'en'.
+    lang = queryLang() || storedLang() || 'en';
 
     /* index.html stamps data-theme in <head> so the first paint is already the
        right theme; recomputing it from the same two inputs here is a no-op,

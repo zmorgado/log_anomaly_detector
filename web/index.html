@@ -1,41 +1,36 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en" data-lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Detector de anomalías</title>
-<meta name="description" content="Reproducción interactiva de un detector de intrusiones de dos etapas (autoencoder LSTM + XGBoost) sobre CIC-IDS2017. Arrastrá el umbral de anomalía y mirá cómo se recalculan precision, recall y la cola de alertas.">
+<title>The threshold is the whole system — Network intrusion detector</title>
+<meta name="description" content="0.996 in isolation vs. 0.805 end-to-end. Drag the 0.4444 threshold and inspect where a two-stage intrusion detector breaks — by Santiago Morgado.">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://log-anomaly-detector.santiagomorgado.dev/">
+<meta property="og:site_name" content="santiago morgado">
+<meta property="og:title" content="The threshold is the whole system — Network intrusion detector">
+<meta property="og:description" content="0.996 in isolation vs. 0.805 end-to-end. Drag the 0.4444 threshold and inspect where a two-stage intrusion detector breaks — by Santiago Morgado.">
+<meta property="og:image" content="https://log-anomaly-detector.santiagomorgado.dev/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The threshold is the whole system — Network intrusion detector">
+<meta name="twitter:description" content="0.996 in isolation vs. 0.805 end-to-end. Drag the 0.4444 threshold and inspect where a two-stage intrusion detector breaks.">
+<meta name="twitter:image" content="https://log-anomaly-detector.santiagomorgado.dev/og-image.png">
 
 <!-- The two --ground values, as literals: a meta tag is read before any
      stylesheet, so it cannot see the token layer. Keep them in step with
-     demo.css by hand, exactly as zmorgado/portfolio app/layout.tsx does. -->
-<meta name="theme-color" id="theme-color-light" media="(prefers-color-scheme: light)" content="#fcfcfb">
-<meta name="theme-color" id="theme-color-dark" media="(prefers-color-scheme: dark)" content="#121211">
+     demo.css and zmorgado/portfolio app/layout.tsx by hand. -->
+<meta name="theme-color" id="theme-color-light" media="(prefers-color-scheme: light)" content="#f3efe4">
+<meta name="theme-color" id="theme-color-dark" media="(prefers-color-scheme: dark)" content="#11100e">
 
-<!-- The same mark the portfolio uses, because it is this project's plate:
-     a threshold, a flow that crosses it and is caught, and one that sits just
-     under it and is not. -->
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-16x16.svg" sizes="16x16" type="image/svg+xml">
 
-<!-- Theme and language, resolved before first paint. This has to run here in
-     <head> rather than in demo.js, which loads at the end of <body>: deferring
-     it flashes the wrong theme for anyone whose saved choice disagrees with
-     their system, and that flash is conspicuous because visitors arrive here
-     from the portfolio's dark page.
-
-     Precedence is cookie, then localStorage, then the system preference.
-     localStorage is per-origin, so a choice made on santiagomorgado.dev is
-     invisible to this subdomain; a cookie scoped to .santiagomorgado.dev is
-     what carries it across. localStorage is the fallback for a visitor who
-     lands here first, or who opens the directory over file://.
-
-     data-theme is stamped unconditionally, even when the answer came from the
-     system: demo.js reads the current theme off that attribute, and leaving it
-     empty is what made the first click on the toggle do nothing (issue #5).
-     Mirrors resolveTheme(), readPref() and THEME_KEY in demo.js, which
-     recompute the same answer harmlessly. web/tests/demo.test.js runs this
-     script against both and fails if the two ever disagree. -->
+<!-- Theme and language, resolved before first paint. Precedence: explicit URL
+     ?lang= override, then cross-subdomain .santiagomorgado.dev cookie, then
+     localStorage ('lad-theme' / 'lad-lang'), then prefers-color-scheme. -->
 <script>
 (function () {
   var d = document.documentElement;
@@ -46,12 +41,9 @@
     } catch (e) { return null; }
   };
   var stored = function (key) {
-    try { return localStorage.getItem(key); } catch (e) { return null; }   // privacy modes throw
+    try { return localStorage.getItem(key); } catch (e) { return null; }
   };
 
-  /* First *valid* value wins, not first value present: a cookie holding
-     something this page does not understand must fall through to localStorage
-     rather than mask a real choice made here. */
   var pick = function (cookieName, storageKey, valid) {
     var v = cookie(cookieName);
     if (valid(v)) return v;
@@ -68,8 +60,13 @@
   }
   d.setAttribute('data-theme', t);
 
-  // 'lad-lang' is what this page wrote before the two sites shared a cookie.
-  var l = pick('lang', 'lad-lang', isLang);
+  var ql = null;
+  try {
+    if (window.location && window.location.search) {
+      ql = new URLSearchParams(window.location.search).get('lang');
+    }
+  } catch (e) {}
+  var l = isLang(ql) ? ql : pick('lang', 'lad-lang', isLang);
   if (l) {
     d.setAttribute('lang', l);
     d.setAttribute('data-lang', l);
@@ -77,96 +74,77 @@
 })();
 </script>
 
-<!-- The page's own stylesheet first: it must not queue behind a third-party
-     request. The two families are the portfolio's, and ADR-0003 keeps this
-     deployment free of a build step, so they come from Google Fonts rather
-     than being self-hosted and subset. display=swap and a real fallback stack
-     in demo.css are what that costs. -->
 <link rel="stylesheet" href="demo.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Spectral:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Geist+Mono:wght@400;500&display=swap">
 </head>
 <body>
 
 <div class="wrap">
 
-  <header class="page-header">
-
-    <!-- The portfolio's masthead pair, in its order: language, then theme.
-         Both name what they switch TO and nothing else.
-
-         Neither is inside #demo, so Play/Pause remains the first focusable
-         element of the demo region (WCAG 2.2.2), and tabbing to either of
-         these does not pause the stream — they are page controls, not demo
-         controls. Sits outside .prose so it can align to the right edge of the
-         demo column.
-
-         The language button deliberately carries no lang attribute of its own:
-         the one control that switches languages has to survive both of them. -->
-    <div class="page-controls">
+  <div class="page-controls">
+    <div class="masthead-left">
       <a class="back-link" href="https://santiagomorgado.dev/"
          data-i18n-aria-label="nav.backAria">
+        <span class="mini-totem" aria-hidden="true">
+          <i class="mini-key mini-key--signal"></i>
+          <i class="mini-key mini-key--gold"></i>
+          <i class="mini-key mini-key--alert"></i>
+        </span>
+        <span class="back-link__author" lang="es">santiago morgado</span>
         <span class="back-link__glyph" aria-hidden="true">←</span>
-        <span data-i18n="nav.back">Volver al inicio</span>
+        <span class="back-link__hint" data-i18n="nav.back">all projects</span>
       </a>
-      <div class="page-controls__toggles">
-        <button type="button" class="lang-toggle" id="btn-lang"
-                data-i18n-aria-label="lang.switchTo">en</button>
-        <!-- aria-label is set by applyTheme(), which is the only thing that
-             knows which direction the button currently points. -->
-        <button type="button" class="theme-toggle" id="btn-theme" aria-pressed="false"
-                aria-label="Usar el tema oscuro">
-          <span id="btn-theme-label">oscuro</span>
-        </button>
-      </div>
+      <span class="issue-pill" data-i18n="nav.project">network intrusion detector</span>
+    </div>
+    <div class="page-controls__toggles">
+      <button type="button" class="lang-toggle" id="btn-lang"
+              data-i18n-aria-label="lang.switchTo">es</button>
+      <button type="button" class="theme-toggle" id="btn-theme" aria-pressed="false"
+              aria-label="Use dark theme">
+        <span id="btn-theme-label">dark</span>
+      </button>
+    </div>
+  </div>
+
+  <header class="page-header">
+    <div class="hero-top-row">
+      <span class="issue-pill issue-pill--accent" data-i18n="intro.eyebrow">interactive replay · 2,000 windows</span>
+      <a class="repo-link" id="repo-link"
+         href="https://github.com/zmorgado/log_anomaly_detector"
+         target="_blank" rel="noopener noreferrer"
+         data-i18n-aria-label="intro.repoAria">
+        <span class="repo-link__glyph" aria-hidden="true">↗</span>
+        <span class="repo-link__text" data-i18n="intro.repo">code &amp; documentation</span>
+        <span class="repo-link__url">github.com/zmorgado/log_anomaly_detector</span>
+      </a>
     </div>
 
-    <div class="prose">
-      <p class="eyebrow" data-i18n="intro.eyebrow">Proyecto final · Curso Intensivo en Inteligencia Artificial (CEI Sevilla)</p>
-      <h1 class="page-title" data-i18n="intro.title">Detector de anomalías en tráfico de red</h1>
-
+    <div class="prose hero-prose">
+      <h1 class="page-title" data-i18n="intro.title">The threshold is the whole system</h1>
       <p class="page-lede" data-i18n-html="intro.p1">
-        Un sistema híbrido de dos etapas: un <b>autoencoder LSTM no supervisado</b>, entrenado
-        solo con tráfico benigno, marca los flujos que no logra reconstruir; un
-        <b>clasificador XGBoost</b> le pone nombre a la amenaza en los que quedaron marcados.
-      </p>
-      <p class="intro-p" data-i18n-html="intro.p2"></p>
-
-      <p class="repo-link-wrap">
-        <a class="repo-link" id="repo-link"
-           href="https://github.com/zmorgado/log_anomaly_detector"
-           target="_blank" rel="noopener noreferrer"
-           data-i18n-aria-label="intro.repoAria">
-          <span class="repo-link__glyph" aria-hidden="true">↗</span>
-          <span class="repo-link__text" data-i18n="intro.repo">Código y documentación</span>
-          <span class="repo-link__url">github.com/zmorgado/log_anomaly_detector</span>
-        </a>
+        My first attempt scored below 0.05 F1 on synthetic data. Switching to real CIC-IDS2017 traffic
+        and splitting unsupervised detection (<b>LSTM autoencoder</b>) from classification (<b>XGBoost</b>)
+        made it work: <b>0.996</b> isolated accuracy vs. <b>0.805</b> end-to-end.<br>Drag the threshold below
+        to see what slips underneath.
       </p>
     </div>
-  </header>
 
-  <!-- Demo title and description: secondary to the project intro above. -->
-  <section class="demo-intro prose" aria-labelledby="demo-intro-h">
-    <p class="eyebrow" id="demo-intro-h" data-i18n="demo.eyebrow">Demo interactiva</p>
-    <h2 class="demo-intro__title" data-i18n="demo.title">El umbral es todo el sistema</h2>
-    <p class="demo-intro__lede" data-i18n-html="demo.lede"></p>
-    <p class="provenance" id="provenance">
-      <b data-i18n="prov.source">Fuente</b> <span id="prov-source">—</span><br>
-      <b data-i18n="prov.rows">Filas</b> <span id="prov-rows">—</span> ·
-      <b data-i18n="prov.windows">ventanas</b> <span id="prov-windows">—</span>
-      · <b data-i18n="prov.tensor">tensor</b> <span id="prov-shape">—</span><br>
-      <span id="prov-note">—</span>
-    </p>
-  </section>
+    <details class="prov-details">
+      <summary class="prov-summary" data-i18n="prov.summary">dataset provenance &amp; 20×36 tensor slice</summary>
+      <p class="provenance" id="provenance">
+        <b data-i18n="prov.source">Source</b> <span id="prov-source">—</span><br>
+        <b data-i18n="prov.rows">Rows</b> <span id="prov-rows">—</span> ·
+        <b data-i18n="prov.windows">windows</b> <span id="prov-windows">—</span>
+        · <b data-i18n="prov.tensor">tensor</b> <span id="prov-shape">—</span><br>
+        <span id="prov-note">—</span>
+      </p>
+    </details>
+  </header>
 
   <noscript>
     <div class="prose noscript-note">
-      <strong>JavaScript está desactivado.</strong> La reproducción interactiva lo necesita.
-      Los resultados medidos no cambian: el pipeline completo obtiene <b>0.805 de accuracy</b>
-      contra el 0.996 de XGBoost por separado. DoS Hulk tiene <b>0.424 de recall</b>: 8.568
-      de 14.887 flujos no llegan al clasificador.
-      <br><br>
       <strong>JavaScript is disabled.</strong> The interactive replay needs it. The measured
       results are unchanged: the full pipeline scores <b>0.805 accuracy</b> against XGBoost's
       0.996 on its own. DoS Hulk recall is <b>0.424</b>: 8,568 of 14,887 flows never reach
@@ -176,169 +154,126 @@
 
   <main class="demo stack" id="demo">
 
-    <!-- ============ Playback controls: FIRST focusable element (WCAG 2.2.2) ============ -->
-    <section aria-labelledby="controls-h">
-      <div class="header-bar">
-        <div>
-          <p class="eyebrow" id="controls-h" data-i18n="ctrl.eyebrow">Reproducción</p>
-          <p class="threshold-hint" id="controls-note" style="margin-top:6px"
-             data-i18n-html="ctrl.note">
-            1 flujo / 420&nbsp;ms
-          </p>
-        </div>
+    <!-- ============ Playback controls (FIRST focusable element, WCAG 2.2.2) + live verdict ============ -->
+    <section aria-labelledby="controls-h" class="control-verdict-bar">
+      <div class="controls-group">
         <div class="controls" id="playback-controls">
           <button type="button" class="btn btn--primary" id="btn-play"
                   aria-pressed="false">
             <span class="btn__glyph" id="btn-play-glyph" aria-hidden="true">▮▮</span>
-            <span id="btn-play-label">Pausar</span>
+            <span id="btn-play-label">Pause</span>
           </button>
           <button type="button" class="btn" id="btn-step">
             <span class="btn__glyph" aria-hidden="true">▸</span>
-            <span data-i18n="ctrl.step">Avanzar una ventana</span>
+            <span data-i18n="ctrl.step">Step one window</span>
           </button>
         </div>
+        <p class="threshold-hint" id="controls-note" data-i18n-html="ctrl.note">
+          1 flow / 420&nbsp;ms
+        </p>
+        <h2 class="sr-only" id="controls-h" data-i18n="ctrl.eyebrow">Playback &amp; live verdict</h2>
       </div>
-      <!-- Throttled: at most one announcement per 5s (§7.4) -->
+
+      <div class="verdict-inline" aria-live="off">
+        <span class="verdict verdict--benign" id="verdict">
+          <span class="verdict__glyph" id="verdict-glyph" aria-hidden="true">·</span>
+          <span id="verdict-text">BENIGN</span>
+        </span>
+        <p class="verdict-sub" id="verdict-sub">—</p>
+      </div>
+
       <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" id="live-status"></p>
     </section>
 
-    <!-- ============ 1 + 2. Log stream with sliding-window bracket ============ -->
-    <section aria-labelledby="stream-h" class="sec-rule stream-section">
-      <div class="section-head">
-        <p class="eyebrow" id="stream-h" data-i18n="stream.eyebrow">Flujo de red</p>
-        <h2 class="section-title" data-i18n="stream.title">Los flujos llegan de 20 en 20</h2>
-        <p class="section-note" data-i18n-html="stream.note"></p>
-      </div>
-
-      <div class="stream-panel">
-        <div class="stream-scroll">
-          <div class="stream-cols" id="stream-cols" aria-hidden="true"></div>
-          <div class="stream-viewport" id="stream-viewport" aria-hidden="true">
-            <div class="stream-rail" id="stream-rail"></div>
-            <div class="window-bracket" id="window-bracket">
-              <span class="window-bracket__label" id="bracket-label" title="Ventana t−19 → t · 20 × 36">Ventana actual</span>
-              <span class="window-bracket__tick tick-tl"></span>
-              <span class="window-bracket__tick tick-tr"></span>
-              <span class="window-bracket__tick tick-bl"></span>
-              <span class="window-bracket__tick tick-br"></span>
-            </div>
+    <!-- ============ 1. FIRST SCREEN: Reconstruction error chart + draggable threshold ============ -->
+    <section aria-labelledby="chart-h">
+      <div class="chart-panel" id="chart-card">
+        <div class="chart-panel__head">
+          <div>
+            <p class="eyebrow" id="chart-h" data-i18n="chart.eyebrow">stage 1 · autoencoder gate</p>
+            <h2 class="section-title" data-i18n="chart.title">Reconstruction error vs. threshold</h2>
+          </div>
+          <div class="chart-legend" aria-hidden="true">
+            <span data-i18n="legend.benign">· benign (below)</span>
+            <span data-i18n="legend.anom">▲ flagged anomalous</span>
+            <span data-i18n="legend.missed">○ missed attack (below)</span>
+            <span data-i18n="legend.unknown">◇ unknown class</span>
+            <span data-i18n="legend.calib">— — calibrated 0.4444</span>
           </div>
         </div>
-        <div class="stream-foot">
-          <span><span data-i18n="stream.window">ventana</span> <span id="foot-window">—</span> ·
-            <span data-i18n="stream.rows">filas</span> <span id="foot-rows">—</span></span>
-          <span id="foot-abs">—</span>
-        </div>
-      </div>
-    </section>
 
-    <div class="connector" aria-hidden="true">
-      <svg width="11" height="37" viewBox="0 0 11 37" fill="none">
-        <path d="M5.5 0 V32" stroke="currentColor" stroke-width="1"/>
-        <path d="M1.5 27.5 L5.5 32.5 L9.5 27.5" stroke="currentColor" stroke-width="1" fill="none"/>
-      </svg>
-    </div>
-
-    <!-- ============ 3. Reconstruction error chart + draggable threshold ============ -->
-    <section aria-labelledby="chart-h">
-      <div class="section-head">
-        <p class="eyebrow" id="chart-h" data-i18n="chart.eyebrow">Detección</p>
-        <h2 class="section-title" data-i18n="chart.title">Error de reconstrucción frente al umbral</h2>
-      </div>
-
-      <div class="chart-panel">
         <div class="chart-plot" id="chart-plot">
           <svg id="chart" role="img" aria-labelledby="chart-title chart-desc"
                preserveAspectRatio="none">
-            <title id="chart-title" data-i18n-title="chart.svgTitle">Error de reconstrucción por ventana con umbral de anomalía arrastrable</title>
+            <title id="chart-title" data-i18n-title="chart.svgTitle">Reconstruction error per window with draggable anomaly threshold</title>
             <desc id="chart-desc"></desc>
           </svg>
         </div>
         <p class="chart-footline" id="chart-footline"></p>
 
-        <div class="chart-legend" aria-hidden="true">
-          <span data-i18n="legend.benign">· benigno (por debajo)</span>
-          <span data-i18n="legend.anom">▲ marcado como anómalo</span>
-          <span data-i18n="legend.missed">○ ataque no detectado (por debajo)</span>
-          <span data-i18n="legend.unknown">◇ clase desconocida</span>
-          <span data-i18n="legend.calib">— — calibrado 0.4444</span>
-        </div>
+        <div class="threshold-tray">
+          <div class="preset-row" role="group" aria-label="Threshold presets">
+            <button type="button" class="btn preset-btn" data-preset="0.4444" data-i18n="preset.calib">0.4444 calibrated</button>
+            <button type="button" class="btn preset-btn" data-preset="0.31" data-i18n="preset.hulk">0.3100 catch Hulk</button>
+            <button type="button" class="btn preset-btn" data-preset="0.60" data-i18n="preset.clean">0.6000 zero noise</button>
+          </div>
 
-        <div class="threshold-row">
-          <label class="threshold-hint" for="threshold-num" data-i18n="thr.label">Umbral</label>
-          <input type="text" inputmode="decimal" class="threshold-num" id="threshold-num"
-                 value="0.4444" autocomplete="off" spellcheck="false"
-                 data-i18n-aria-label="thr.aria"
-                 aria-label="Umbral de detección de anomalías, entrada numérica">
-          <button type="button" class="btn" id="btn-calib" data-i18n="thr.reset">Volver al calibrado</button>
-          <!-- Not prose: a mono legend for the control it sits beside. -->
-          <span class="threshold-hint" id="threshold-help" data-i18n="thr.help">
-            flechas ±0.005 · mayús ±0.05 · av/re pág ±0.1 · inicio/fin · enter → 0.4444
-          </span>
-        </div>
+          <div class="threshold-row">
+            <label class="threshold-hint" for="threshold-num" data-i18n="thr.label">threshold</label>
+            <input type="text" inputmode="decimal" class="threshold-num" id="threshold-num"
+                   value="0.4444" autocomplete="off" spellcheck="false"
+                   data-i18n-aria-label="thr.aria"
+                   aria-label="Anomaly detection threshold, numeric entry">
+            <button type="button" class="btn" id="btn-calib" data-i18n="thr.reset">Reset to calibrated</button>
+            <span class="threshold-hint" id="threshold-help" data-i18n="thr.help">
+              arrows ±0.005 · shift ±0.05 · pgup/dn ±0.1 · home/end · enter → 0.4444
+            </span>
+          </div>
 
-        <div class="metrics-strip" id="metrics-strip">
-          <span class="metric"><span class="metric__k" data-i18n="m.precision">precision</span>
-            <span class="metric__v" id="m-prec">—</span><span class="metric__d" id="m-prec-d"></span></span>
-          <span class="metric"><span class="metric__k" data-i18n="m.recall">recall</span>
-            <span class="metric__v" id="m-rec">—</span><span class="metric__d" id="m-rec-d"></span></span>
-          <span class="metric"><span class="metric__k" data-i18n="m.f1">F1</span>
-            <span class="metric__v" id="m-f1">—</span><span class="metric__d" id="m-f1-d"></span></span>
-          <span class="metric"><span class="metric__k" data-i18n="m.alerts">alertas</span>
-            <span class="metric__v" id="m-alerts">—</span><span class="metric__d" id="m-alerts-d"></span></span>
+          <div class="metrics-strip" id="metrics-strip">
+            <span class="metric"><span class="metric__k" data-i18n="m.precision">precision</span>
+              <span class="metric__v" id="m-prec">—</span><span class="metric__d" id="m-prec-d"></span></span>
+            <span class="metric"><span class="metric__k" data-i18n="m.recall">recall</span>
+              <span class="metric__v" id="m-rec">—</span><span class="metric__d" id="m-rec-d"></span></span>
+            <span class="metric"><span class="metric__k" data-i18n="m.f1">f1</span>
+              <span class="metric__v" id="m-f1">—</span><span class="metric__d" id="m-f1-d"></span></span>
+            <span class="metric"><span class="metric__k" data-i18n="m.alerts">alerts</span>
+              <span class="metric__v" id="m-alerts">—</span><span class="metric__d" id="m-alerts-d"></span></span>
+          </div>
         </div>
         <p class="prose-note" id="tradeoff-note"></p>
       </div>
     </section>
 
     <div class="connector" aria-hidden="true">
-      <svg width="11" height="37" viewBox="0 0 11 37" fill="none">
-        <path d="M5.5 0 V32" stroke="currentColor" stroke-width="1"/>
-        <path d="M1.5 27.5 L5.5 32.5 L9.5 27.5" stroke="currentColor" stroke-width="1" fill="none"/>
+      <svg width="11" height="32" viewBox="0 0 11 32" fill="none">
+        <path d="M5.5 0 V27" stroke="currentColor" stroke-width="1"/>
+        <path d="M1.5 22.5 L5.5 27.5 L9.5 22.5" stroke="currentColor" stroke-width="1" fill="none"/>
       </svg>
     </div>
 
-    <!-- ============ 4. Verdict ============ -->
-    <section aria-labelledby="verdict-h" class="verdict-wrap">
-      <p class="eyebrow" id="verdict-h" style="text-align:center" data-i18n="verdict.eyebrow">Veredicto de esta ventana</p>
-      <p style="margin-top:12px">
-        <span class="verdict verdict--benign" id="verdict">
-          <span class="verdict__glyph" id="verdict-glyph" aria-hidden="true">·</span>
-          <span id="verdict-text">BENIGNO</span>
-        </span>
-      </p>
-      <p class="verdict-sub" id="verdict-sub">—</p>
-    </section>
-
-    <div class="connector" aria-hidden="true">
-      <svg width="11" height="37" viewBox="0 0 11 37" fill="none">
-        <path d="M5.5 0 V32" stroke="currentColor" stroke-width="1"/>
-        <path d="M1.5 27.5 L5.5 32.5 L9.5 27.5" stroke="currentColor" stroke-width="1" fill="none"/>
-      </svg>
-    </div>
-
-    <!-- ============ 5. Incident triage queue ============ -->
+    <!-- ============ 2. Incident triage queue ============ -->
     <section aria-labelledby="queue-h">
       <div class="section-head">
-        <p class="eyebrow" id="queue-h" data-i18n="queue.eyebrow">Clasificación</p>
-        <h2 class="section-title" data-i18n="queue.title">Cola de triaje de incidentes</h2>
+        <p class="eyebrow" id="queue-h" data-i18n="queue.eyebrow">stage 2 · classifier output</p>
+        <h2 class="section-title" data-i18n="queue.title">Classified alert queue</h2>
         <p class="section-note" data-i18n-html="queue.note"></p>
       </div>
       <ul class="queue" id="queue" role="log" aria-live="polite"
-          data-i18n-aria-label="queue.aria" aria-label="Cola de triaje de incidentes"></ul>
+          data-i18n-aria-label="queue.aria" aria-label="Classified alert queue"></ul>
       <p class="queue-more" id="queue-more"></p>
 
       <details class="a11y-table">
-        <summary data-i18n="a11y.summary">Alternativa en texto — últimas 20 ventanas analizadas</summary>
+        <summary data-i18n="a11y.summary">Text alternative — last 20 analyzed windows</summary>
         <div class="table-scroll">
           <table class="metrics-table" id="a11y-table">
-            <caption data-i18n="a11y.caption">Ventanas más recientes: índice, error de reconstrucción, veredicto y clase</caption>
+            <caption data-i18n="a11y.caption">Most recent windows: index, reconstruction error, verdict, and class</caption>
             <thead>
-              <tr><th scope="col" data-i18n="a11y.thWindow">Ventana</th>
+              <tr><th scope="col" data-i18n="a11y.thWindow">Window</th>
                   <th scope="col" data-i18n="a11y.thError">Error</th>
-                  <th scope="col" data-i18n="a11y.thVerdict">Veredicto</th>
-                  <th scope="col" data-i18n="a11y.thClass">Clase</th>
-                  <th scope="col" data-i18n="a11y.thTruth">Label real</th></tr>
+                  <th scope="col" data-i18n="a11y.thVerdict">Verdict</th>
+                  <th scope="col" data-i18n="a11y.thClass">Class</th>
+                  <th scope="col" data-i18n="a11y.thTruth">Ground truth</th></tr>
             </thead>
             <tbody></tbody>
           </table>
@@ -346,25 +281,19 @@
       </details>
     </section>
 
-    <!-- ============ 6. Honest failure panel ============ -->
+    <!-- ============ 3. Honest failure panel ============ -->
     <section aria-labelledby="fail-h" class="sec-rule">
       <div class="section-head">
-        <p class="eyebrow" id="fail-h" data-i18n="fail.eyebrow">Lo que el sistema hace mal</p>
-        <h2 class="section-title" data-i18n="fail.title">Las fallas, a tamaño real</h2>
+        <p class="eyebrow" id="fail-h" data-i18n="fail.eyebrow">what this system gets wrong</p>
+        <h2 class="section-title" data-i18n="fail.title">The failures, at full size</h2>
       </div>
 
       <div class="failure-panel">
-        <!-- Two columns, two failures, and each keeps the prose that explains
-             it. Left is what the detector never catches; right is what reaches
-             the analyst and should not, or arrives with no name on it. The
-             explanations used to run down the left under both cards, which read
-             as though they all belonged to the missed-attack half and left the
-             right column empty below two lines. -->
         <div class="fail-grid">
           <div class="fail-col">
             <div class="fail-card fail-card--missed">
               <p class="fail-card__head"><span aria-hidden="true">○</span>
-                <span data-i18n="fail.missedHead">Ataques no detectados</span></p>
+                <span data-i18n="fail.missedHead">Missed attacks</span></p>
               <p class="fail-card__num" id="fail-missed">—</p>
               <p class="fail-card__body" id="fail-missed-body">—</p>
             </div>
@@ -374,7 +303,7 @@
           <div class="fail-col">
             <div class="fail-card fail-card--fp">
               <p class="fail-card__head"><span aria-hidden="true">▲</span>
-                <span data-i18n="fail.fpHead">Falsos positivos</span></p>
+                <span data-i18n="fail.fpHead">False positives</span></p>
               <p class="fail-card__num" id="fail-fp">—</p>
               <p class="fail-card__body" id="fail-fp-body">—</p>
             </div>
@@ -385,38 +314,38 @@
 
         <div class="table-scroll">
           <table class="metrics-table">
-            <caption data-i18n="fail.tableCaption">Pipeline completo, conjunto de evaluación completo (artifacts/metrics.json)</caption>
+            <caption data-i18n="fail.tableCaption">Full pipeline, complete evaluation set (artifacts/metrics.json)</caption>
             <thead>
-              <tr><th scope="col" data-i18n="fail.thClass">Clase</th>
+              <tr><th scope="col" data-i18n="fail.thClass">Class</th>
                   <th scope="col" data-i18n="fail.thPrecision">Precision</th>
                   <th scope="col" data-i18n="fail.thRecall">Recall</th>
                   <th scope="col" data-i18n="fail.thF1">F1</th>
-                  <th scope="col" data-i18n="fail.thSupport">Soporte</th></tr>
+                  <th scope="col" data-i18n="fail.thSupport">Support</th></tr>
             </thead>
             <tbody>
-              <tr><td>BENIGN</td><td>0.724</td><td>0.999</td><td>0.839</td><td class="num-support" data-num="25466">25.466</td></tr>
-              <tr class="row-weak"><td>DoS Hulk</td><td>0.998</td><td>0.424</td><td>0.596</td><td class="num-support" data-num="14887">14.887</td></tr>
-              <tr><td>DoS Slowhttptest</td><td>0.998</td><td>0.898</td><td>0.945</td><td class="num-support" data-num="5499">5.499</td></tr>
-              <tr><td>DoS slowloris</td><td>0.994</td><td>0.855</td><td>0.919</td><td class="num-support" data-num="4129">4.129</td></tr>
+              <tr><td>BENIGN</td><td>0.724</td><td>0.999</td><td>0.839</td><td class="num-support" data-num="25466">25,466</td></tr>
+              <tr class="row-weak"><td>DoS Hulk</td><td>0.998</td><td>0.424</td><td>0.596</td><td class="num-support" data-num="14887">14,887</td></tr>
+              <tr><td>DoS Slowhttptest</td><td>0.998</td><td>0.898</td><td>0.945</td><td class="num-support" data-num="5499">5,499</td></tr>
+              <tr><td>DoS slowloris</td><td>0.994</td><td>0.855</td><td>0.919</td><td class="num-support" data-num="4129">4,129</td></tr>
             </tbody>
           </table>
         </div>
 
         <div class="compare">
           <div class="compare-row">
-            <span><span data-i18n="cmp.xgb">XGBoost por separado</span>
-              <span class="compare-note" data-i18n="cmp.xgbNote">— con labels disponibles</span></span>
-            <b class="compare-val">0.996 <span data-i18n="cmp.accuracy">de accuracy</span></b>
+            <span><span data-i18n="cmp.xgb">XGBoost alone</span>
+              <span class="compare-note" data-i18n="cmp.xgbNote">— labels available</span></span>
+            <b class="compare-val">0.996 <span data-i18n="cmp.accuracy">accuracy</span></b>
           </div>
           <div class="compare-row">
-            <span><span data-i18n="cmp.lstm">Detector LSTM por separado</span>
-              <span class="compare-note" data-i18n="cmp.lstmNote">— no supervisado, binario</span></span>
-            <b class="compare-val">0.696 <span data-i18n="cmp.accuracy">de accuracy</span></b>
+            <span><span data-i18n="cmp.lstm">LSTM detector alone</span>
+              <span class="compare-note" data-i18n="cmp.lstmNote">— unsupervised, binary</span></span>
+            <b class="compare-val">0.696 <span data-i18n="cmp.accuracy">accuracy</span></b>
           </div>
           <div class="compare-row compare-row--hero">
-            <span><b data-i18n="cmp.pipeline">Pipeline completo</b>
-              <span class="compare-note" data-i18n="cmp.pipeNote">— el número honesto</span></span>
-            <b class="compare-val">0.805 <span data-i18n="cmp.accuracy">de accuracy</span></b>
+            <span><b data-i18n="cmp.pipeline">Full pipeline</b>
+              <span class="compare-note" data-i18n="cmp.pipeNote">— the honest number</span></span>
+            <b class="compare-val">0.805 <span data-i18n="cmp.accuracy">accuracy</span></b>
           </div>
         </div>
 
@@ -424,15 +353,52 @@
       </div>
     </section>
 
+    <!-- ============ 4. Raw flow stream (under the hood, below the fold) ============ -->
+    <section aria-labelledby="stream-h" class="sec-rule stream-section">
+      <div class="section-head">
+        <p class="eyebrow" id="stream-h" data-i18n="stream.eyebrow">under the hood · sliding window input</p>
+        <h2 class="section-title" data-i18n="stream.title">Raw flows arrive, 20 at a time</h2>
+        <p class="section-note" data-i18n-html="stream.note"></p>
+      </div>
+
+      <div class="stream-panel">
+        <div class="stream-scroll">
+          <div class="stream-cols" id="stream-cols" aria-hidden="true"></div>
+          <div class="stream-viewport" id="stream-viewport" aria-hidden="true">
+            <div class="stream-rail" id="stream-rail"></div>
+            <div class="window-bracket" id="window-bracket">
+              <span class="window-bracket__label" id="bracket-label" title="Window t−19 → t · 20 × 36">Current window</span>
+              <span class="window-bracket__tick tick-tl"></span>
+              <span class="window-bracket__tick tick-tr"></span>
+              <span class="window-bracket__tick tick-bl"></span>
+              <span class="window-bracket__tick tick-br"></span>
+            </div>
+          </div>
+        </div>
+        <div class="stream-foot">
+          <span><span data-i18n="stream.window">window</span> <span id="foot-window">—</span> ·
+            <span data-i18n="stream.rows">rows</span> <span id="foot-rows">—</span></span>
+          <span id="foot-abs">—</span>
+        </div>
+      </div>
+    </section>
+
     <section aria-labelledby="learned-h" class="sec-rule">
       <div class="section-head">
-        <p class="eyebrow" data-i18n="learned.eyebrow">Aprendizaje</p>
-        <h2 class="section-title" id="learned-h" data-i18n="learned.title">Lo que aprendí</h2>
+        <p class="eyebrow" data-i18n="learned.eyebrow">lessons</p>
+        <h2 class="section-title" id="learned-h" data-i18n="learned.title">What I learned</h2>
       </div>
       <p class="section-note" data-i18n-html="learned.body"></p>
     </section>
 
   </main>
+
+  <section class="exit-section" aria-label="More work">
+    <a class="exit-card" href="https://santiagomorgado.dev/">
+      <span class="exit-card__kicker" data-i18n="exit.kicker">santiago morgado · santiagomorgado.dev</span>
+      <span class="exit-card__cta" data-i18n="exit.cta">Inspect 3 more backend, FastAPI &amp; applied AI systems →</span>
+    </a>
+  </section>
 
   <footer class="page-footer prose">
     <p data-i18n-html="footer.p1"></p>
